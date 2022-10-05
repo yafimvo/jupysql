@@ -109,7 +109,6 @@ class SqlMagic(Magics, Configurable):
     autocommit = Bool(True, config=True, help="Set autocommit mode")
 
     def __init__(self, shell):
-        print('log_sql-magic-init')
         telemetry.log_api("sql-magic-init")
 
         self._store = store
