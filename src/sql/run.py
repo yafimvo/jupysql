@@ -17,6 +17,8 @@ try:
 except ImportError:
     PGSpecial = None
 
+from sql.telemetry import telemetry
+
 
 def unduplicate_field_names(field_names):
     """Append a number to duplicate field names to make them unique."""
@@ -46,7 +48,8 @@ class UnicodeWriter(object):
 
     def writerow(self, row):
         if six.PY2:
-            _row = [s.encode("utf-8") if hasattr(s, "encode") else s for s in row]
+            _row = [s.encode("utf-8") if hasattr(s, "encode")
+                    else s for s in row]
         else:
             _row = row
         self.writer.writerow(_row)
@@ -200,6 +203,14 @@ class ResultSet(list, ColumnGuesserMixin):
 
         pie = plt.pie(self.ys[0], labels=self.xlabels, **kwargs)
         plt.title(title or self.ys[0].name)
+
+        telemetry.log_api('jupysql-success',
+                          metadata={
+                              'action': 'pie',
+                              'title': title,
+                              **kwargs
+                          })
+
         return pie
 
     def plot(self, title=None, **kwargs):
@@ -231,6 +242,14 @@ class ResultSet(list, ColumnGuesserMixin):
         ylabel = ", ".join(y.name for y in self.ys)
         plt.title(title or ylabel)
         plt.ylabel(ylabel)
+
+        telemetry.log_api('jupysql-success',
+                          metadata={
+                              'action': 'plot',
+                              'title': title,
+                              **kwargs
+                          })
+
         return plot
 
     def bar(self, key_word_sep=" ", title=None, **kwargs):
@@ -261,11 +280,28 @@ class ResultSet(list, ColumnGuesserMixin):
             plt.xticks(range(len(self.xlabels)), self.xlabels, rotation=45)
         plt.xlabel(self.xlabel)
         plt.ylabel(self.ys[0].name)
+
+        telemetry.log_api('jupysql-success',
+                          metadata={
+                              'action': 'bar',
+                              'key_word_sep': key_word_sep,
+                              'title': title,
+                              **kwargs
+                          })
+
         return plot
 
     def csv(self, filename=None, **format_params):
         """Generate results in comma-separated form.  Write to ``filename`` if given.
         Any other parameters will be passed on to csv.writer."""
+
+        telemetry.log_api('jupysql-success',
+                          metadata={
+                              'action': 'csv',
+                              'filename': filename,
+                              **format_params
+                          })
+
         if not self.pretty:
             return None  # no results
         self.pretty.add_rows(self)
@@ -323,7 +359,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos : pos + size]
+                yield source_list[pos: pos + size]
                 pos += size
 
         self.fetchmany = fetchmany
@@ -364,7 +400,8 @@ def run(conn, sql, config, user_namespace):
             if first_word == "begin":
                 raise Exception("ipython_sql does not support transactions")
             if first_word.startswith("\\") and (
-                "postgres" in str(conn.dialect) or "redshift" in str(conn.dialect)
+                "postgres" in str(
+                    conn.dialect) or "redshift" in str(conn.dialect)
             ):
                 if not PGSpecial:
                     raise ImportError("pgspecial not installed")
