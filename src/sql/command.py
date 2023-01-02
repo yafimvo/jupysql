@@ -11,6 +11,23 @@ class SQLCommand:
     """
 
     def __init__(self, magic, user_ns, line, cell) -> None:
+        _line_set_to_cell = False
+        try:
+            self.args = parse.magic_args(magic.execute, line)
+            # check if any argument was given
+            _any_arg_given = any(value for value in list(
+                self.args.__dict__.values())[1:])
+
+            if not cell and not _any_arg_given:
+                cell = line
+                line = ""
+                _line_set_to_cell = True
+        except Exception as e:
+            # Failed to parse the line but
+            # the query  might work in a cell
+            cell = line
+            line = ""
+
         # Parse variables (words wrapped in {}) for %%sql magic
         # (for %sql this is done automatically)
         cell = magic.shell.var_expand(cell)
@@ -28,7 +45,10 @@ class SQLCommand:
             line_for_command = self.args.line
             add_conn = False
 
-        self.command_text = " ".join(line_for_command) + "\n" + cell
+        if _line_set_to_cell:
+            self.command_text = " ".join(line_for_command) + cell + "\n"
+        else:
+            self.command_text = " ".join(line_for_command) + "\n" + cell
 
         if self.args.file:
             with open(self.args.file, "r") as infile:

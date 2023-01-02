@@ -5,10 +5,39 @@ from sqlalchemy import create_engine
 
 from sql.command import SQLCommand
 
+from conftest import runsql
+
 
 @pytest.fixture
 def sql_magic(ip):
     return ip.magics_manager.lsmagic()["line"]["sql"].__self__
+
+
+@pytest.mark.parametrize(
+    "line, query_result",
+    [
+        ("SELECT instr(' ', ' ')", [1]),
+        ("SELECT instr(' a ', ' ')", [1]),
+        ("SELECT instr('aaa', ' ')", [0]),
+        ("SELECT instr('aaa', 'a')", [1]),
+        ("SELECT COUNT(*) FROM test", [2]),
+        ("SELECT * FROM test where n == 1", [(1, 'foo')]),
+        ("SELECT * FROM test", [(1, 'foo'), (2, 'bar')])
+    ]
+)
+def test_line_queries(
+    ip,
+    line,
+    query_result
+):
+    result = runsql(ip, line)
+    _is_expecting_multiple_result = type(query_result[0]) is tuple
+    if _is_expecting_multiple_result:
+        for row in range(len(query_result)):
+            for i in range(len(query_result[row])):
+                assert result[row][i] == query_result[row][i]
+    else:
+        assert result[0][0] == query_result[0]
 
 
 @pytest.mark.parametrize(
