@@ -110,3 +110,123 @@ Pass existing engines to `%sql`
 %%sql
 SELECT MYSUM(1, 2)
 ```
+
+## Connect to a SQLite database with spaces
+
+Currently, due to a limitation in the argument parser, it's not possible to directly connect to SQLite databases whose path contains spaces; however, you can do it by creating the engine first.
+
+### Setup
+
+```{code-cell} ipython3
+%pip install jupysql --quiet
+```
+
+```{code-cell} ipython3
+%load_ext sql
+```
+
+## Connect to db
+
+```{code-cell} ipython3
+from sqlalchemy import create_engine
+
+engine = create_engine("sqlite:///my database.db")
+```
+
+Add some sample data:
+
+```{code-cell} ipython3
+import pandas as pd
+
+_ = pd.DataFrame({"x": range(5)}).to_sql("numbers", engine)
+```
+
+```{code-cell} ipython3
+%sql engine
+```
+
+```{code-cell} ipython3
+%%sql
+SELECT * FROM numbers
+```
+
+## Switch connections
+
+```{versionadded} 0.5.2
+`-A/--alias`
+```
+
+```{code-cell} ipython3
+from sqlalchemy import create_engine
+import pandas as pd
+
+engine_one = create_engine("sqlite:///one.db")
+pd.DataFrame({"x": range(5)}).to_sql("one", engine_one)
+
+engine_two = create_engine("sqlite:///two.db")
+_ = pd.DataFrame({"x": range(5)}).to_sql("two", engine_two)
+```
+
+```{code-cell} ipython3
+%load_ext sql
+```
+
+Assign alias to both connections so we can switch them by it:
+
+```{code-cell} ipython3
+%sql sqlite:///one.db --alias one
+%sql sqlite:///two.db --alias two
+```
+
+```{code-cell} ipython3
+%sql
+```
+
+Pass the alias to use such connection:
+
+```{code-cell} ipython3
+%%sql one
+SELECT * FROM one
+```
+
+It becomes the current active connection:
+
+```{code-cell} ipython3
+%sql
+```
+
+Hence, we can skip it in upcoming queries:
+
+```{code-cell} ipython3
+%%sql
+SELECT * FROM one
+```
+
+Switch connection:
+
+```{code-cell} ipython3
+%%sql two
+SELECT * FROM two
+```
+
+```{code-cell} ipython3
+%sql
+```
+
+Close by passing the alias:
+
+```{code-cell} ipython3
+%sql --close one
+```
+
+```{code-cell} ipython3
+%sql
+```
+
+```{code-cell} ipython3
+%sql --close two
+```
+
+```{code-cell} ipython3
+%sql -l
+```

@@ -47,6 +47,7 @@ def test_line_queries(
         ("sqlite://", "", "", "sqlite://", None),
         ("SELECT * FROM TABLE", "", "SELECT * FROM TABLE\n", "", None),
         ("SELECT * FROM", "TABLE", "SELECT * FROM\nTABLE", "", None),
+        ("my_var << SELECT * FROM table", "", "SELECT * FROM table\n", "", "my_var"),
         ("my_var << SELECT *", "FROM table", "SELECT *\nFROM table", "", "my_var"),
         ("[db]", "", "", "sqlite://", None),
     ],
@@ -55,7 +56,8 @@ def test_line_queries(
         "connection-string",
         "sql-query",
         "sql-query-in-line-and-cell",
-        "parsed-var",
+        "parsed-var-single-line",
+        "parsed-var-multi-line",
         "config",
     ],
 )
@@ -152,6 +154,7 @@ def test_args(ip, sql_magic):
     cmd = SQLCommand(sql_magic, ip.user_ns, line="--with author_one", cell="")
 
     assert cmd.args.__dict__ == {
+        "alias": None,
         "line": "",
         "connections": False,
         "close": None,
