@@ -1,5 +1,6 @@
 title: JupySQL
 author: Ploomber
+copyright: 2023
 logo: square-no-bg-small.png
 
 # Force re-execution of notebooks on each build.
@@ -29,10 +30,24 @@ html:
   use_repository_button: true
   extra_navbar: Join us on <a href="https://ploomber.io/community/">Slack!</a>
   announcement: To launch any tutorial in JupyterLab, click on the 🚀 button below!
+  google_analytics_id: G-JBZ8NNQSLN
+
 
 sphinx:
   config:
     execution_show_tb: true
+
+    # plot directive config
+    plot_include_source: True
+    plot_html_show_formats: False
+    plot_html_show_source_link: False
+
+  extra_extensions:
+    - sphinx.ext.autodoc
+    - sphinx.ext.napoleon
+    - sphinx.ext.autosummary
+    - matplotlib.sphinxext.plot_directive
+
 
 
 launch_buttons:
