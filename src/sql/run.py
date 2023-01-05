@@ -174,6 +174,7 @@ class ResultSet(list, ColumnGuesserMixin):
         for row in self:
             yield dict(zip(self.keys, row))
 
+    @telemetry.log_call('data-frame')
     def DataFrame(self):
         "Returns a Pandas DataFrame instance built from the result set."
         import pandas as pd
@@ -181,6 +182,7 @@ class ResultSet(list, ColumnGuesserMixin):
         frame = pd.DataFrame(self, columns=(self and self.keys) or [])
         return frame
 
+    @telemetry.log_call('pie')
     def pie(self, key_word_sep=" ", title=None, **kwargs):
         """Generates a pylab pie chart from the result set.
 
@@ -211,6 +213,7 @@ class ResultSet(list, ColumnGuesserMixin):
         ax.set_title(title or self.ys[0].name)
         return ax
 
+    @telemetry.log_call('plot')
     def plot(self, title=None, **kwargs):
         """Generates a pylab plot from the result set.
 
@@ -249,6 +252,7 @@ class ResultSet(list, ColumnGuesserMixin):
 
         return ax
 
+    @telemetry.log_call('bar')
     def bar(self, key_word_sep=" ", title=None, **kwargs):
         """Generates a pylab bar plot from the result set.
 
@@ -283,17 +287,10 @@ class ResultSet(list, ColumnGuesserMixin):
         ax.set_ylabel(self.ys[0].name)
         return ax
 
+    @telemetry.log_call('generate-csv')
     def csv(self, filename=None, **format_params):
         """Generate results in comma-separated form.  Write to ``filename`` if given.
         Any other parameters will be passed on to csv.writer."""
-
-        telemetry.log_api('jupysql-success',
-                          metadata={
-                              'action': 'csv',
-                              'filename': filename,
-                              **format_params
-                          })
-
         if not self.pretty:
             return None  # no results
         self.pretty.add_rows(self)

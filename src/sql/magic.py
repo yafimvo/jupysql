@@ -50,16 +50,9 @@ class RenderMagic(Magics):
         action="append",
         dest="with_",
     )
+    @telemetry.log_call('sqlrender')
     def sqlrender(self, line):
         args = parse_argstring(self.sqlrender, line)
-
-        telemetry.log_api('jupysql-success',
-                          metadata={
-                              'action': 'sqlrender',
-                              'line': line,
-                              'args': vars(args)
-                          })
-
         return str(store[args.line[0]])
 
 
@@ -119,8 +112,8 @@ class SqlMagic(Magics, Configurable):
     )
     autocommit = Bool(True, config=True, help="Set autocommit mode")
 
+    @telemetry.log_call('init')
     def __init__(self, shell):
-        telemetry.log_api("sql-magic-init")
 
         self._store = store
 
@@ -196,6 +189,7 @@ class SqlMagic(Magics, Configurable):
         type=str,
         help="Assign an alias to the connection",
     )
+    @telemetry.log_call('execute')
     def execute(self, line="", cell="", local_ns={}):
         """
         Runs SQL statement against a database, specified by
@@ -263,13 +257,6 @@ class SqlMagic(Magics, Configurable):
                         raw_args = raw_args[1:-1]
                 args.connection_arguments = json.loads(raw_args)
             except Exception as e:
-                telemetry.log_api('jupysql-error',
-                                  metadata={
-                                      'action': 'execute',
-                                      'query': parsed.get("sql"),
-                                      'args': vars(args),
-                                      'exception': str(e)
-                                  })
                 print(e)
                 raise e
         else:
@@ -288,13 +275,6 @@ class SqlMagic(Magics, Configurable):
                 alias=args.alias,
             )
         except Exception as e:
-            telemetry.log_api('jupysql-error',
-                              metadata={
-                                  'action': 'execute',
-                                  'query': parsed.get("sql"),
-                                  'args': vars(args),
-                                  'exception': str(e)
-                              })
             print(e)
             print(sql.connection.Connection.tell_format())
             return None
@@ -304,28 +284,10 @@ class SqlMagic(Magics, Configurable):
                 command.sql, conn, user_ns, append=False, index=not args.no_index
             )
 
-            telemetry.log_api('jupysql-persist',
-                              metadata={
-                                  'action': 'execute',
-                                  'query': parsed.get("sql"),
-                                  'args': vars(args),
-                                  'result': result.dict()
-                              })
-
-            return result
-
         if args.append:
             return self._persist_dataframe(
                 command.sql, conn, user_ns, append=True, index=not args.no_index
             )
-            telemetry.log_api('jupysql-persist-append',
-                              metadata={
-                                  'action': 'execute',
-                                  'query': parsed.get("sql"),
-                                  'args': vars(args),
-                                  'result': result.dict()
-                              })
-            return result
 
         if not command.sql:
             return
@@ -376,13 +338,6 @@ class SqlMagic(Magics, Configurable):
         # JA: added DatabaseError for MySQL
         except (ProgrammingError, OperationalError, DatabaseError) as e:
             # Sqlite apparently return all errors as OperationalError :/
-            telemetry.log_api('jupysql-error',
-                              metadata={
-                                  'action': 'execute',
-                                  'query': parsed.get("sql"),
-                                  'args': vars(args),
-                                  'exception': str(e)
-                              })
 
             if self.short_errors:
                 print(e)
