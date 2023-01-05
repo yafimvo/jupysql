@@ -1,6 +1,15 @@
 # CHANGELOG
 
-## 0.4.7dev
+## 0.5.2dev
+
+## 0.5.1 (2022-12-26)
+* Allow to connect to databases with an existing `sqlalchemy.engine.Engine` object
+
+## 0.5 (2022-12-24)
+* `ResultSet.plot()`, `ResultSet.bar()`, and `ResultSet.pie()` return `matplotlib.Axes` objects
+
+## 0.4.7 (2022-12-23)
+* Assigns a variable without displaying an output message ([#13](https://github.com/ploomber/jupysql/issues/13))
 
 ## 0.4.6 (2022-08-30)
 * Updates telemetry key
@@ -65,7 +74,7 @@
 
 ## 0.3.6
 
-* Fixed issue [#30](https://github.com/ploomber/jupysql/issues/30), commit failures for sqlite (thanks stonebig, jandot)
+* Fixed issue number 30, commit failures for sqlite (thanks stonebig, jandot)
 
 ## 0.3.5
 

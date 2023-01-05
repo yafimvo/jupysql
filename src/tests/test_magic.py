@@ -1,10 +1,13 @@
+from pathlib import Path
 import os.path
 import re
 import tempfile
 from textwrap import dedent
 
 import pytest
+from sqlalchemy import create_engine
 
+from sql.connection import Connection
 from conftest import runsql
 
 
@@ -42,7 +45,7 @@ def test_multi_sql(ip):
     assert "Shakespeare" in str(result) and "Brecht" in str(result)
 
 
-def test_result_var(ip):
+def test_result_var(ip, capsys):
     ip.run_cell_magic(
         "sql",
         "",
@@ -53,7 +56,10 @@ def test_result_var(ip):
         """,
     )
     result = ip.user_global_ns["x"]
+    out, _ = capsys.readouterr()
+
     assert "Shakespeare" in str(result) and "Brecht" in str(result)
+    assert "Returning data to local variable" not in out
 
 
 def test_result_var_multiline_shovel(ip):
@@ -175,23 +181,25 @@ def test_connection_args_double_quotes(ip):
 #     assert 'Shakespeare' in str(persisted)
 
 
+@pytest.mark.parametrize("value", ["None", "0"])
+def test_displaylimit_disabled(ip, value):
+    ip.run_line_magic("config", "SqlMagic.autolimit = None")
+
+    ip.run_line_magic("config", f"SqlMagic.displaylimit = {value}")
+    result = runsql(ip, "SELECT * FROM author;")
+
+    assert "Brecht" in result._repr_html_()
+    assert "Shakespeare" in result._repr_html_()
+
+
 def test_displaylimit(ip):
     ip.run_line_magic("config", "SqlMagic.autolimit = None")
-    ip.run_line_magic("config", "SqlMagic.displaylimit = None")
-    result = runsql(
-        ip,
-        "SELECT * FROM (VALUES ('apple'), ('banana'), ('cherry')) AS Result ORDER BY 1;",
-    )
-    assert "apple" in result._repr_html_()
-    assert "banana" in result._repr_html_()
-    assert "cherry" in result._repr_html_()
+
     ip.run_line_magic("config", "SqlMagic.displaylimit = 1")
-    result = runsql(
-        ip,
-        "SELECT * FROM (VALUES ('apple'), ('banana'), ('cherry')) AS Result ORDER BY 1;",
-    )
-    assert "apple" in result._repr_html_()
-    assert "cherry" not in result._repr_html_()
+    result = runsql(ip, "SELECT * FROM author ORDER BY first_name;")
+
+    assert "Brecht" in result._repr_html_()
+    assert "Shakespeare" not in result._repr_html_()
 
 
 def test_column_local_vars(ip):
@@ -305,6 +313,7 @@ def test_bracket_var_substitution(ip):
     assert not result
 
 
+# the next two tests had the same name, so I added a _2 to the second one
 def test_multiline_bracket_var_substitution(ip):
 
     ip.user_global_ns["col"] = "first_name"
@@ -319,7 +328,7 @@ def test_multiline_bracket_var_substitution(ip):
     assert not result
 
 
-def test_multiline_bracket_var_substitution(ip):
+def test_multiline_bracket_var_substitution_2(ip):
     ip.user_global_ns["col"] = "first_name"
     result = ip.run_cell_magic(
         "sql",
@@ -357,10 +366,11 @@ def test_json_in_select(ip):
         AS json
         """,
     )
-    assert ('{"greeting": "Farewell sweet {person}"}',)
+
+    assert result == [('{"greeting": "Farewell sweet {person}"}',)]
 
 
-def test_close_connection(ip):
+def test_closed_connections_are_no_longer_listed(ip):
     connections = runsql(ip, "%sql -l")
     connection_name = list(connections)[0]
     runsql(ip, f"%sql -x {connection_name}")
@@ -368,11 +378,79 @@ def test_close_connection(ip):
     assert connection_name not in connections_afterward
 
 
+def test_close_connection(ip, tmp_empty):
+    # open two connections
+    ip.run_cell("%sql sqlite:///one.db")
+    ip.run_cell("%sql sqlite:///two.db")
+
+    # close them
+    ip.run_cell("%sql -x sqlite:///one.db")
+    ip.run_cell("%sql --close sqlite:///two.db")
+
+    assert "sqlite:///one.db" not in Connection.connections
+    assert "sqlite:///two.db" not in Connection.connections
+
+
+def test_close_connection_with_alias(ip, tmp_empty):
+    # open two connections
+    ip.run_cell("%sql sqlite:///one.db --alias one")
+    ip.run_cell("%sql sqlite:///two.db --alias two")
+
+    # close them
+    ip.run_cell("%sql -x one")
+    ip.run_cell("%sql --close two")
+
+    assert "sqlite:///one.db" not in Connection.connections
+    assert "sqlite:///two.db" not in Connection.connections
+    assert "one" not in Connection.connections
+    assert "two" not in Connection.connections
+
+
+def test_column_names_visible(ip, tmp_empty):
+    res = ip.run_line_magic("sql", "SELECT * FROM empty_table")
+
+    assert "<th>column</th>" in res._repr_html_()
+    assert "<th>another</th>" in res._repr_html_()
+
+
+@pytest.mark.xfail(reason="known parse @ parser.py error")
+def test_sqlite_path_with_spaces(ip, tmp_empty):
+    ip.run_cell("%sql sqlite:///some database.db")
+
+    assert Path("some database.db").is_file()
+
+
+def test_pass_existing_engine(ip, tmp_empty):
+    ip.user_global_ns["my_engine"] = create_engine("sqlite:///my.db")
+    ip.run_line_magic("sql", "  my_engine ")
+
+    runsql(
+        ip,
+        [
+            "CREATE TABLE some_data (n INT, name TEXT)",
+            "INSERT INTO some_data VALUES (10, 'foo')",
+            "INSERT INTO some_data VALUES (20, 'bar')",
+        ],
+    )
+
+    result = ip.run_line_magic("sql", "SELECT * FROM some_data")
+
+    assert result == [(10, "foo"), (20, "bar")]
+
+
 # theres some weird shared state with this one, moving it to the end
 def test_autolimit(ip):
+    # test table has two rows
     ip.run_line_magic("config", "SqlMagic.autolimit = 0")
     result = runsql(ip, "SELECT * FROM test;")
     assert len(result) == 2
+
+    # test table has two rows
+    ip.run_line_magic("config", "SqlMagic.autolimit = None")
+    result = runsql(ip, "SELECT * FROM test;")
+    assert len(result) == 2
+
+    # test setting autolimit to 1
     ip.run_line_magic("config", "SqlMagic.autolimit = 1")
     result = runsql(ip, "SELECT * FROM test;")
     assert len(result) == 1

@@ -4,40 +4,131 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.1
+    jupytext_version: 1.14.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
 
-# DuckDB
-
-```{tip}
-[![](https://raw.githubusercontent.com/ploomber/ploomber/master/_static/open-in-jupyterlab.svg)](https://binder.ploomber.io/v2/gh/ploomber/binder-env/main?urlpath=git-pull%3Frepo%3Dhttps%253A%252F%252Fgithub.com%252Fploomber%252Fjupysql%26urlpath%3Dlab%252Ftree%252Fjupysql%252Fexamples%252Fduckdb.ipynb%26branch%3Dmaster)
-
-Or try locally:
+# DuckDB integration
 
 
-~~~
-pip install k2s -U && k2s get ploomber/jupysql/master/examples/duckdb.ipynb
-~~~
+JupySQL integrates with DuckDB so you can run SQL queries in a Jupyter notebook. Jump into any section to learn more!
 
-```
++++
 
-```{dropdown} Required packages
-~~~
-pip install duckdb duckdb-engine pyarrow
-~~~
-```
+## Querying a `.csv` file
 
-
-## Reading a SQLite database
+### Installation and setup
 
 ```{code-cell} ipython3
-%load_ext autoreload
-%autoreload 2
+%pip install jupysql duckdb duckdb-engine --quiet
+%load_ext sql
+%sql duckdb://
+```
 
+Get a sample `.csv.` file:
+
+```{code-cell} ipython3
+from urllib.request import urlretrieve
+
+_ = urlretrieve("https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",
+                "penguins.csv")
+```
+
+### Query
+
+```{code-cell} ipython3
+%%sql
+SELECT *
+FROM penguins.csv
+LIMIT 3
+```
+
+```{code-cell} ipython3
+%%sql
+SELECT species, COUNT(*) AS count
+FROM penguins.csv
+GROUP BY species
+ORDER BY count DESC
+```
+
+### Plot
+
+```{code-cell} ipython3
+%%sql species_count <<
+SELECT species, COUNT(*) AS count
+FROM penguins.csv
+GROUP BY species
+ORDER BY count DESC
+```
+
+```{code-cell} ipython3
+ax = species_count.bar()
+# customize plot (this is a matplotlib Axes object)
+_ = ax.set_title("Num of penguins by species")
+```
+
+## Querying a `.parquet` file
+
+### Installation and setup
+
+```{code-cell} ipython3
+%pip install jupysql duckdb duckdb-engine pyarrow --quiet
+%load_ext sql
+%sql duckdb://
+```
+
+Download sample `.parquet` file:
+
+```{code-cell} ipython3
+from urllib.request import urlretrieve
+
+_ = urlretrieve("https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet",
+                "yellow_tripdata_2021-01.parquet")
+```
+
+### Query
+
+```{code-cell} ipython3
+%%sql
+SELECT tpep_pickup_datetime, tpep_dropoff_datetime, passenger_count
+FROM "yellow_tripdata_2021-01.parquet"
+LIMIT 3
+```
+
+```{code-cell} ipython3
+%%sql
+SELECT
+    passenger_count, AVG(trip_distance) AS avg_trip_distance
+FROM "yellow_tripdata_2021-01.parquet"
+GROUP BY passenger_count
+ORDER BY passenger_count ASC
+```
+
+### Plot
+
+```{code-cell} ipython3
+%%sql avg_trip_distance <<
+SELECT
+    passenger_count, AVG(trip_distance) AS avg_trip_distance
+FROM "yellow_tripdata_2021-01.parquet"
+GROUP BY passenger_count
+ORDER BY passenger_count ASC
+```
+
+```{code-cell} ipython3
+ax = avg_trip_distance.plot()
+# customize plot (this is a matplotlib Axes object)
+_ = ax.set_title("Avg trip distance by num of passengers")
+```
+
+## Reading from a SQLite database
+
+If you have a large SQlite database, you can use DuckDB to perform analytical queries it with much better performance.
+
+```{code-cell} ipython3
 %load_ext sql
 ```
 
@@ -77,7 +168,13 @@ This is a beta feature, please [join our community](https://ploomber.io/communit
 
 This section demonstrates how we can efficiently plot large datasets with DuckDB and JupySQL without blowing up our machine's memory.
 
-We first download a sample data: NYC Taxi data splitted in 3 parquet files:
+Let's install the required package:
+
+```{code-cell} ipython3
+%pip install jupysql duckdb duckdb-engine pyarrow --quiet
+```
+
+Now, we download a sample data: NYC Taxi data splitted in 3 parquet files:
 
 ```{code-cell} ipython3
 N_MONTHS = 3
@@ -157,7 +254,7 @@ We see that memory usage increase just a bit.
 
 +++
 
-## Benchmark: Using pandas
+### Benchmark: Using pandas
 
 We now repeat the same process using pandas.
 

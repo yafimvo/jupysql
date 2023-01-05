@@ -6,7 +6,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.0
+    jupytext_version: 1.14.4
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -51,6 +51,53 @@ a flag with (-a|--connection_arguments)the connection string as a JSON string. S
 %sql -a '{"timeout":10, "mode":"ro"}' sqlite:// SELECT * from work;
 ```
 
++++
+
+## Connecting securely
+
+**It is highly recommended** that you do not pass plain credentials.
+
+```{code-cell} ipython3
+%load_ext sql
+```
+
+### Building connection string
+
+One option is to use `getpass`, type your password, build your connection string and pass it to `%sql`:
+
++++
+
+```python
+from getpass import getpass
+
+password = getpass()
+connection_string = f"postgresql://user:{password}@localhost/database"
+%sql $connection_string
+```
+
++++
+
+### Using `DATABASE_URL`
+
++++
+
+You may also set the `DATABASE_URL` environment variable, and `%sql` will automatically load it from there. You can do it either by setting the environment variable from your terminal or in your notebook:
+
+```python
+from getpass import getpass
+from os import environ
+
+password = getpass()
+environ["DATABASE_URL"] = f"postgresql://user:{password}@localhost/database"
+```
+
+```python
+# without any args, %sql reads from DATABASE_URL
+%sql
+```
+
++++
+
 ## DSN connections
 
 Alternately, you can store connection info in a configuration file, under a section name chosen to  refer to your database.
@@ -74,6 +121,38 @@ then you can:
 %sql --section DB_CONFIG_1 
 ```
 
-```{code-cell} ipython3
++++
 
+## Using an existing `sqlalchemy.engine.Engine`
+
+```{versionadded} 0.5.1
+```
+
+Use an existing `Engine` by passing the variable name to `%sql`.
+
+```{code-cell} ipython3
+import pandas as pd
+from sqlalchemy.engine import create_engine
+```
+
+```{code-cell} ipython3
+engine = create_engine("sqlite://")
+```
+
+```{code-cell} ipython3
+df = pd.DataFrame({"x": range(5)})
+df.to_sql("numbers", engine)
+```
+
+```{code-cell} ipython3
+%load_ext sql
+```
+
+```{code-cell} ipython3
+%sql engine
+```
+
+```{code-cell} ipython3
+%%sql
+SELECT * FROM numbers
 ```

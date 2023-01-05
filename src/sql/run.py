@@ -71,7 +71,10 @@ class UnicodeWriter(object):
 
 
 class CsvResultDescriptor(object):
-    """Provides IPython Notebook-friendly output for the feedback after a ``.csv`` called."""
+    """
+    Provides IPython Notebook-friendly output for the
+    feedback after a ``.csv`` called.
+    """
 
     def __init__(self, file_path):
         self.file_path = file_path
@@ -132,10 +135,11 @@ class ResultSet(list, ColumnGuesserMixin):
             result = self.pretty.get_html_string()
             result = _cell_with_spaces_pattern.sub(_nonbreaking_spaces, result)
             if self.config.displaylimit and len(self) > self.config.displaylimit:
-                result = (
-                    '%s\n<span style="font-style:italic;text-align:center;">%d rows, truncated to displaylimit of %d</span>'
-                    % (result, len(self), self.config.displaylimit)
+                HTML = (
+                    '%s\n<span style="font-style:italic;text-align:center;">'
+                    "%d rows, truncated to displaylimit of %d</span>"
                 )
+                result = HTML % (result, len(self), self.config.displaylimit)
             return result
         else:
             return None
@@ -201,17 +205,11 @@ class ResultSet(list, ColumnGuesserMixin):
         self.guess_pie_columns(xlabel_sep=key_word_sep)
         import matplotlib.pylab as plt
 
-        pie = plt.pie(self.ys[0], labels=self.xlabels, **kwargs)
-        plt.title(title or self.ys[0].name)
+        ax = plt.gca()
 
-        telemetry.log_api('jupysql-success',
-                          metadata={
-                              'action': 'pie',
-                              'title': title,
-                              **kwargs
-                          })
-
-        return pie
+        ax.pie(self.ys[0], labels=self.xlabels, **kwargs)
+        ax.set_title(title or self.ys[0].name)
+        return ax
 
     def plot(self, title=None, **kwargs):
         """Generates a pylab plot from the result set.
@@ -235,22 +233,21 @@ class ResultSet(list, ColumnGuesserMixin):
 
         self.guess_plot_columns()
         self.x = self.x or range(len(self.ys[0]))
+
+        ax = plt.gca()
+
         coords = reduce(operator.add, [(self.x, y) for y in self.ys])
-        plot = plt.plot(*coords, **kwargs)
+        ax.plot(*coords, **kwargs)
+
         if hasattr(self.x, "name"):
-            plt.xlabel(self.x.name)
+            ax.set_xlabel(self.x.name)
+
         ylabel = ", ".join(y.name for y in self.ys)
-        plt.title(title or ylabel)
-        plt.ylabel(ylabel)
 
-        telemetry.log_api('jupysql-success',
-                          metadata={
-                              'action': 'plot',
-                              'title': title,
-                              **kwargs
-                          })
+        ax.set_title(title or ylabel)
+        ax.set_ylabel(ylabel)
 
-        return plot
+        return ax
 
     def bar(self, key_word_sep=" ", title=None, **kwargs):
         """Generates a pylab bar plot from the result set.
@@ -274,22 +271,17 @@ class ResultSet(list, ColumnGuesserMixin):
         """
         import matplotlib.pylab as plt
 
+        ax = plt.gca()
+
         self.guess_pie_columns(xlabel_sep=key_word_sep)
-        plot = plt.bar(range(len(self.ys[0])), self.ys[0], **kwargs)
+        ax.bar(range(len(self.ys[0])), self.ys[0], **kwargs)
+
         if self.xlabels:
-            plt.xticks(range(len(self.xlabels)), self.xlabels, rotation=45)
-        plt.xlabel(self.xlabel)
-        plt.ylabel(self.ys[0].name)
+            ax.set_xticks(range(len(self.xlabels)), self.xlabels, rotation=45)
 
-        telemetry.log_api('jupysql-success',
-                          metadata={
-                              'action': 'bar',
-                              'key_word_sep': key_word_sep,
-                              'title': title,
-                              **kwargs
-                          })
-
-        return plot
+        ax.set_xlabel(self.xlabel)
+        ax.set_ylabel(self.ys[0].name)
+        return ax
 
     def csv(self, filename=None, **format_params):
         """Generate results in comma-separated form.  Write to ``filename`` if given.

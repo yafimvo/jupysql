@@ -15,6 +15,7 @@ import sql.connection
 import sql.parse
 import sql.run
 from sql.store import store
+from sql.command import SQLCommand
 
 try:
     from traitlets.config.configurable import Configurable
@@ -33,6 +34,10 @@ from sql.telemetry import telemetry
 
 @magics_class
 class RenderMagic(Magics):
+    """
+    %sqlrender magic which prints composed queries
+    """
+
     @line_magic
     @magic_arguments()
     # TODO: only accept one arg
@@ -75,7 +80,10 @@ class SqlMagic(Magics, Configurable):
     style = Unicode(
         "DEFAULT",
         config=True,
-        help="Set the table printing style to any of prettytable's defined styles (currently DEFAULT, MSWORD_FRIENDLY, PLAIN_COLUMNS, RANDOM)",
+        help=(
+            "Set the table printing style to any of prettytable's "
+            "defined styles (currently DEFAULT, MSWORD_FRIENDLY, PLAIN_COLUMNS, RANDOM)"
+        ),
     )
     short_errors = Bool(
         True,
@@ -86,7 +94,10 @@ class SqlMagic(Magics, Configurable):
         None,
         config=True,
         allow_none=True,
-        help="Automatically limit the number of rows displayed (full result set is still stored)",
+        help=(
+            "Automatically limit the number of rows "
+            "displayed (full result set is still stored)"
+        ),
     )
     autopandas = Bool(
         False,
@@ -179,8 +190,16 @@ class SqlMagic(Magics, Configurable):
         action="store_true",
         help="Do not execute query (use it with --save)",
     )
+    @argument(
+        "-A",
+        "--alias",
+        type=str,
+        help="Assign an alias to the connection",
+    )
     def execute(self, line="", cell="", local_ns={}):
-        """Runs SQL statement against a database, specified by SQLAlchemy connect string.
+        """
+        Runs SQL statement against a database, specified by
+        SQLAlchemy connect string.
 
         If no database connection has been established, first word
         should be a SQLAlchemy connection string, or the user@db name
@@ -204,46 +223,33 @@ class SqlMagic(Magics, Configurable):
           mysql+pymysql://me:mypw@localhost/mydb
 
         """
+        # line is the text after the magic, cell is the cell's body
 
-        telemetry.log_api('jupysql-started',
-                          metadata={
-                              'action': 'execute',
-                              'line': line
-                          })
+        # Examples
 
-        # Parse variables (words wrapped in {}) for %%sql magic (for %sql this is done automatically)
-        cell = self.shell.var_expand(cell)
-        line = sql.parse.without_sql_comment(
-            parser=self.execute.parser, line=line)
-        args = parse_argstring(self.execute, line)
+        # %sql {line}
+        # note that line magic has no body
+
+        # %%sql {line}
+        # {cell}
+
+        # save globals and locals so they can be referenced in bind vars
+        user_ns = self.shell.user_ns.copy()
+        user_ns.update(local_ns)
+
+        command = SQLCommand(self, user_ns, line, cell)
+        # args.line: contains the line after the magic with all options removed
+        args = command.args
 
         if args.connections:
             return sql.connection.Connection.connections
         elif args.close:
             return sql.connection.Connection._close(args.close)
 
-        # save globals and locals so they can be referenced in bind vars
-        user_ns = self.shell.user_ns.copy()
-        user_ns.update(local_ns)
+        connect_arg = command.connection
 
-        command_text = " ".join(args.line) + "\n" + cell
-
-        if args.file:
-            with open(args.file, "r") as infile:
-                command_text = infile.read() + "\n" + command_text
-
-        parsed = sql.parse.parse(command_text, self)
-
-        original = parsed["sql"]
-
-        if args.with_:
-            final = self._store.render(original, with_=args.with_)
-            parsed["sql"] = str(final)
-
-        connect_str = parsed["connection"]
         if args.section:
-            connect_str = sql.parse.connection_from_dsn_section(
-                args.section, self)
+            connect_arg = sql.parse.connection_from_dsn_section(args.section, self)
 
         if args.connection_arguments:
             try:
@@ -272,11 +278,14 @@ class SqlMagic(Magics, Configurable):
             args.creator = user_ns[args.creator]
 
         try:
+            # this creates a new connection or use an existing one
+            # depending on the connect_arg value
             conn = sql.connection.Connection.set(
-                connect_str,
+                connect_arg,
                 displaycon=self.displaycon,
                 connect_args=args.connection_arguments,
                 creator=args.creator,
+                alias=args.alias,
             )
         except Exception as e:
             telemetry.log_api('jupysql-error',
@@ -291,8 +300,8 @@ class SqlMagic(Magics, Configurable):
             return None
 
         if args.persist:
-            result = self._persist_dataframe(
-                parsed["sql"], conn, user_ns, append=False, index=not args.no_index
+            return self._persist_dataframe(
+                command.sql, conn, user_ns, append=False, index=not args.no_index
             )
 
             telemetry.log_api('jupysql-persist',
@@ -306,8 +315,8 @@ class SqlMagic(Magics, Configurable):
             return result
 
         if args.append:
-            result = self._persist_dataframe(
-                parsed["sql"], conn, user_ns, append=True, index=not args.no_index
+            return self._persist_dataframe(
+                command.sql, conn, user_ns, append=True, index=not args.no_index
             )
             telemetry.log_api('jupysql-persist-append',
                               metadata={
@@ -318,33 +327,19 @@ class SqlMagic(Magics, Configurable):
                               })
             return result
 
-        if not parsed["sql"]:
-            telemetry.log_api('jupysql-error',
-                              metadata={
-                                  'action': 'execute',
-                                  'query': None,
-                                  'args': vars(args),
-                                  'exception': 'Empty query'
-                              })
+        if not command.sql:
             return
 
         # store the query if needed
         if args.save:
-            self._store.store(args.save, original, with_=args.with_)
+            self._store.store(args.save, command.sql_original, with_=args.with_)
 
         if args.no_execute:
             print("Skipping execution...")
             return
 
         try:
-            result = sql.run.run(conn, parsed["sql"], self, user_ns)
-            telemetry.log_api('jupysql-success',
-                              metadata={
-                                  'action': 'execute',
-                                  'query': parsed.get("sql"),
-                                  'args': vars(args),
-                                  'result': result.dict()
-                              })
+            result = sql.run.run(conn, command.sql, self, user_ns)
 
             if (
                 result is not None
@@ -371,10 +366,8 @@ class SqlMagic(Magics, Configurable):
                 return None
             else:
 
-                if parsed["result_var"]:
-                    result_var = parsed["result_var"]
-                    print("Returning data to local variable {}".format(result_var))
-                    self.shell.user_ns.update({result_var: result})
+                if command.result_var:
+                    self.shell.user_ns.update({command.result_var: result})
                     return None
 
                 # Return results into the default ipython _ variable
@@ -433,7 +426,7 @@ def load_ipython_extension(ip):
     # this fails in both Firefox and Chrome for OS X.
     # I get the error: TypeError: IPython.CodeCell.config_defaults is undefined
 
-    # js = "IPython.CodeCell.config_defaults.highlight_modes['magic_sql'] = {'reg':[/^%%sql/]};"
+    # js = "IPython.CodeCell.config_defaults.highlight_modes['magic_sql'] = {'reg':[/^%%sql/]};" # noqa
     # display_javascript(js, raw=True)
     ip.register_magics(SqlMagic)
     ip.register_magics(RenderMagic)

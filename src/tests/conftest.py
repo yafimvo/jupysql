@@ -1,3 +1,4 @@
+import os
 import urllib.request
 from pathlib import Path
 
@@ -19,7 +20,11 @@ def path_to_tests():
 def chinook_db():
     path = PATH_TO_TMP_ASSETS / "my.db"
     if not path.is_file():
-        url = "https://raw.githubusercontent.com/lerocha/chinook-database/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite"
+        url = (
+            "https://raw.githubusercontent.com"
+            "/lerocha/chinook-database/master/"
+            "ChinookDatabase/DataSources/Chinook_Sqlite.sqlite"
+        )
         urllib.request.urlretrieve(url, path)
 
     return str(path)
@@ -40,6 +45,7 @@ def ip():
     ip_session.register_magics(SqlMagic)
     ip_session.register_magics(RenderMagic)
 
+    # runsql creates an inmemory sqlitedatabase
     runsql(
         ip_session,
         [
@@ -49,8 +55,21 @@ def ip():
             "CREATE TABLE author (first_name, last_name, year_of_death)",
             "INSERT INTO author VALUES ('William', 'Shakespeare', 1616)",
             "INSERT INTO author VALUES ('Bertold', 'Brecht', 1956)",
+            "CREATE TABLE empty_table (column INT, another INT)",
         ],
     )
     yield ip_session
     runsql(ip_session, "DROP TABLE test")
     runsql(ip_session, "DROP TABLE author")
+
+
+@pytest.fixture
+def tmp_empty(tmp_path):
+    """
+    Create temporary path using pytest native fixture,
+    them move it, yield, and restore the original path
+    """
+    old = os.getcwd()
+    os.chdir(str(tmp_path))
+    yield str(Path(tmp_path).resolve())
+    os.chdir(old)

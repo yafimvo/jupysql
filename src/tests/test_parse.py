@@ -1,10 +1,15 @@
-import json
 import os
 from pathlib import Path
 
-from six.moves import configparser
 
-from sql.parse import connection_from_dsn_section, parse, without_sql_comment
+import pytest
+
+from sql.parse import (
+    connection_from_dsn_section,
+    parse,
+    without_sql_comment,
+    magic_args,
+)
 
 try:
     from traitlets.config.configurable import Configurable
@@ -54,22 +59,6 @@ def test_expand_environment_variables_in_connection():
     os.environ["DATABASE_URL"] = "postgresql:///shakes"
     assert parse("$DATABASE_URL SELECT * FROM work", empty_config) == {
         "connection": "postgresql:///shakes",
-        "sql": "SELECT * FROM work",
-        "result_var": None,
-    }
-
-
-def test_parse_shovel_operator():
-    assert parse("dest << SELECT * FROM work", empty_config) == {
-        "connection": "",
-        "sql": "SELECT * FROM work",
-        "result_var": "dest",
-    }
-
-
-def test_parse_connect_plus_shovel():
-    assert parse("sqlite:// dest << SELECT * FROM work", empty_config) == {
-        "connection": "sqlite://",
         "sql": "SELECT * FROM work",
         "result_var": None,
     }
@@ -194,3 +183,50 @@ def test_without_sql_persist():
     line = "--persist my_table --uff da"
     expected = "--persist my_table"
     assert without_sql_comment(parser=parser_stub, line=line) == expected
+
+
+def complete_with_defaults(mapping):
+    defaults = {
+        "alias": None,
+        "line": ["some-argument"],
+        "connections": False,
+        "close": None,
+        "creator": None,
+        "section": None,
+        "persist": False,
+        "no_index": False,
+        "append": False,
+        "connection_arguments": None,
+        "file": None,
+        "save": None,
+        "with_": None,
+        "no_execute": False,
+    }
+
+    return {**defaults, **mapping}
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        (
+            "some-argument",
+            {"line": ["some-argument"]},
+        ),
+        (
+            "a b c",
+            {"line": ["a", "b", "c"]},
+        ),
+        (
+            "a b c --file query.sql",
+            {"line": ["a", "b", "c"], "file": "query.sql"},
+        ),
+    ],
+)
+def test_magic_args(ip, line, expected):
+
+    sql_line = ip.magics_manager.lsmagic()["line"]["sql"]
+
+    args = magic_args(sql_line, line)
+
+    assert args.__dict__ == complete_with_defaults(expected)
