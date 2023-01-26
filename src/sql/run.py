@@ -390,6 +390,10 @@ def run(conn, sql, config, user_namespace):
                 result = FakeResultProxy(cur, headers)
             else:
                 txt = sqlalchemy.sql.text(statement)
+
+                if config.autocommit:
+                    conn.session.execution_options(isolation_level="AUTOCOMMIT")
+
                 result = conn.session.execute(txt, user_namespace)
             _commit(conn=conn, config=config)
             if result and config.feedback:
