@@ -26,7 +26,7 @@ from pathlib import Path
 
 paths = ["people.jsonl", "people.csv"]
 
-for path in paths:
+for path in should_fail:
     path = Path(path)
 
     if path.exists():
