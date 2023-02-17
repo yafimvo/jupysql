@@ -1,4 +1,3 @@
-import pytest
 
 
 def test_meta_cmd_display(ip_with_postgreSQL):
@@ -8,7 +7,6 @@ def test_meta_cmd_display(ip_with_postgreSQL):
 
 
 # Known issue, addressing in https://github.com/ploomber/jupysql/issues/90
-@pytest.mark.xfail(reason="known autocommit mode issue")
 def test_auto_commit_mode_on(ip_with_postgreSQL, capsys):
     ip_with_postgreSQL.run_cell("%config SqlMagic.autocommit=True")
     ip_with_postgreSQL.run_cell("%sql CREATE DATABASE new_db")

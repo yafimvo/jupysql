@@ -358,11 +358,15 @@ _COMMIT_BLACKLIST_DIALECTS = (
 )
 
 
-def _commit(conn, config):
+def _commit(conn, config, manual_commit):
     """Issues a commit, if appropriate for current config and dialect"""
 
-    _should_commit = config.autocommit and all(
-        dialect not in str(conn.dialect) for dialect in _COMMIT_BLACKLIST_DIALECTS
+    _should_commit = (
+        config.autocommit
+        and all(
+            dialect not in str(conn.dialect) for dialect in _COMMIT_BLACKLIST_DIALECTS
+        )
+        and not manual_commit
     )
 
     if _should_commit:
@@ -392,10 +396,18 @@ def run(conn, sql, config, user_namespace):
                 txt = sqlalchemy.sql.text(statement)
 
                 if config.autocommit:
-                    conn.session.execution_options(isolation_level="AUTOCOMMIT")
-
+                    try:
+                        conn.session.execution_options(isolation_level="AUTOCOMMIT")
+                    except Exception as e:
+                        print(
+                            "The database driver do not support \
+                            such execution option", e
+                        )
+                        manual_commit = True
+                    else:
+                        manual_commit = False
                 result = conn.session.execute(txt, user_namespace)
-            _commit(conn=conn, config=config)
+            _commit(conn=conn, config=config, manual_commit=manual_commit)
             if result and config.feedback:
                 print(interpret_rowcount(result.rowcount))
         resultset = ResultSet(result, statement, config)
