@@ -394,7 +394,7 @@ def run(conn, sql, config, user_namespace):
                 result = FakeResultProxy(cur, headers)
             else:
                 txt = sqlalchemy.sql.text(statement)
-
+                manual_commit = False
                 if config.autocommit:
                     try:
                         conn.session.execution_options(isolation_level="AUTOCOMMIT")
@@ -404,8 +404,6 @@ def run(conn, sql, config, user_namespace):
                             such execution option", e
                         )
                         manual_commit = True
-                    else:
-                        manual_commit = False
                 result = conn.session.execute(txt, user_namespace)
             _commit(conn=conn, config=config, manual_commit=manual_commit)
             if result and config.feedback:
