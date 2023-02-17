@@ -400,8 +400,8 @@ def run(conn, sql, config, user_namespace):
                         conn.session.execution_options(isolation_level="AUTOCOMMIT")
                     except Exception as e:
                         print(
-                            "The database driver do not support \
-                            such execution option", e
+                            "The database driver do not support "
+                            "such AUTOCOMMIT execution option", "\nException: ", e
                         )
                         manual_commit = True
                 result = conn.session.execute(txt, user_namespace)
