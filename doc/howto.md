@@ -12,11 +12,6 @@ kernelspec:
 ---
 
 ```{code-cell} ipython3
-print(should fail)
-```
-
-
-```{code-cell} ipython3
 :tags: [remove-cell]
 
 # clean up all .db files (this cell will not be displayed in the docs)
