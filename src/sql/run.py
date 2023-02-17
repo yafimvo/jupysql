@@ -380,6 +380,7 @@ def run(conn, sql, config, user_namespace):
     if sql.strip():
         for statement in sqlparse.split(sql):
             first_word = sql.strip().split()[0].lower()
+            manual_commit = False
             if first_word == "begin":
                 raise Exception("ipython_sql does not support transactions")
             if first_word.startswith("\\") and (
@@ -394,7 +395,6 @@ def run(conn, sql, config, user_namespace):
                 result = FakeResultProxy(cur, headers)
             else:
                 txt = sqlalchemy.sql.text(statement)
-                manual_commit = False
                 if config.autocommit:
                     try:
                         conn.session.execution_options(isolation_level="AUTOCOMMIT")
