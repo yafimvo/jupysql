@@ -338,7 +338,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos : pos + size]
+                yield source_list[pos: pos + size]
                 pos += size
 
         self.fetchmany = fetchmany

@@ -123,6 +123,23 @@ class SqlMagic(Magics, Configurable):
         # Add ourself to the list of module configurable via %config
         self.shell.configurables.append(self)
 
+    @line_magic("interactive_test")
+    def interactive_test(self, line="", cell="", local_ns={}):
+        from .interactive import button, textbox
+        from IPython.display import display, clear_output
+
+        @button.on_click
+        def execute(b):
+            clear_output(wait=False)
+            display_query_input()
+            results = self.execute(textbox.value, cell)
+            display(results)
+
+        def display_query_input():
+            display(textbox, button)
+
+        display_query_input()
+
     @needs_local_scope
     @line_magic("sql")
     @cell_magic("sql")
