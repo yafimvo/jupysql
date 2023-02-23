@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from IPython.core.error import UsageError
 
 from sql.connection import Connection
-from sql.magic import SqlMagic
+# from sql.magic import SqlMagic
 from conftest import runsql
 
 
