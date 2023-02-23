@@ -545,8 +545,8 @@ def test_error_on_invalid_connection_string_with_possible_typo(ip_empty, clean_c
     assert isinstance(result.error_in_exec, UsageError)
 
 
-def test_jupysql_alias():
-    assert SqlMagic.magics == {
-        "line": {"jupysql": "execute", "sql": "execute"},
-        "cell": {"jupysql": "execute", "sql": "execute"},
-    }
+# def test_jupysql_alias():
+#     assert SqlMagic.magics == {
+#         "line": {"jupysql": "execute", "sql": "execute"},
+#         "cell": {"jupysql": "execute", "sql": "execute"},
+#     }

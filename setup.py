@@ -24,6 +24,7 @@ install_requires = [
     "jinja2",
     "ploomber-core>=0.2",
     'importlib-metadata;python_version<"3.8"',
+    'ipywidgets'
 ]
 
 DEV = [
