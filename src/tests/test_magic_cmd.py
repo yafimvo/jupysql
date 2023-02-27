@@ -10,7 +10,7 @@ from IPython.core.error import UsageError
         [
             "%sqlcmd stuff",
             UsageError,
-            "%sqlcmd has no command: 'stuff'. Valid commands are: 'tables', 'columns'",
+            "%sqlcmd has no command: 'stuff'. Valid commands are: 'tables', 'columns', 'profile'",
         ],
         [
             "%sqlcmd columns",

@@ -96,5 +96,5 @@ class SqlCmdMagic(Magics, Configurable):
         else:
             raise UsageError(
                 f"%sqlcmd has no command: {cmd_name!r}. "
-                "Valid commands are: 'tables', 'columns', 'profile' "
+                "Valid commands are: 'tables', 'columns', 'profile'"
             )
