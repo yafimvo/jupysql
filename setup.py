@@ -31,6 +31,7 @@ DEV = [
     "flake8",
     "pytest",
     "pandas",
+    "polars",
     "invoke",
     "pkgmt",
     "twine",
