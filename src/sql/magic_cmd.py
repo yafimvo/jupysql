@@ -6,6 +6,7 @@ from IPython.core.magic import (
     Magics,
     line_magic,
     magics_class,
+    needs_local_scope,
 )
 from IPython.core.magic_arguments import argument, magic_arguments
 from IPython.core.error import UsageError
@@ -33,6 +34,17 @@ class CmdParser(argparse.ArgumentParser):
 class SqlCmdMagic(Magics, Configurable):
     """%sqlcmd magic"""
 
+    displaycon = True
+    autolimit = None
+    style = "DEFAULT"
+    short_errors = True
+    displaylimit = None
+    autopandas = False
+    column_local_vars = False
+    feedback = False
+    autocommit = False
+
+    @needs_local_scope
     @line_magic("sqlcmd")
     @magic_arguments()
     @argument("line", default="", type=str, help="Command name")
@@ -65,8 +77,22 @@ class SqlCmdMagic(Magics, Configurable):
 
             args = parser.parse_args(others)
             return inspect.get_columns(name=args.table, schema=args.schema)
+
+        elif cmd_name == "profile":
+            parser = CmdParser()
+
+            parser.add_argument(
+                "-t", "--table", type=str, help="Table name", required=True
+            )
+
+            args = parser.parse_args(others)
+
+            user_ns = self.shell.user_ns.copy()
+            user_ns.update(local_ns)
+
+            return inspect.get_table_statistics(name=args.table, config=self, user_ns=user_ns)
         else:
             raise UsageError(
                 f"%sqlcmd has no command: {cmd_name!r}. "
-                "Valid commands are: 'tables', 'columns'"
+                "Valid commands are: 'tables', 'columns', 'profile' "
             )

@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.5.7dev
+* [Feature] Adds `%sqlcmd profile` (#66)
 
 ## 0.5.6 (2023-02-16)
 
