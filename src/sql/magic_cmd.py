@@ -90,7 +90,9 @@ class SqlCmdMagic(Magics, Configurable):
             user_ns = self.shell.user_ns.copy()
             user_ns.update(local_ns)
 
-            return inspect.get_table_statistics(name=args.table, config=self, user_ns=user_ns)
+            return inspect.get_table_statistics(
+                name=args.table, config=self, user_ns=user_ns
+            )
         else:
             raise UsageError(
                 f"%sqlcmd has no command: {cmd_name!r}. "
