@@ -43,6 +43,7 @@ class SqlCmdMagic(Magics, Configurable):
     column_local_vars = False
     feedback = False
     autocommit = False
+    autopolars = False
 
     @needs_local_scope
     @line_magic("sqlcmd")
