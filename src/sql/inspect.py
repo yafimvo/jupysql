@@ -207,11 +207,12 @@ class TableDescription(DatabaseInspection):
         count = len(list)
         lp = ((count + 1) * n) / 100
         index = math.floor(lp)
-        if index - 1 >= 0:
+        if index - 1 >= 0 and index < len(list):
             diff = list[index] - list[index - 1]
             distance = lp - index
-
             return list[index - 1] + distance * diff
+        else:
+            return None
 
 
 @telemetry.log_call()

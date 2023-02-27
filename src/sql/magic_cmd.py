@@ -86,14 +86,24 @@ class SqlCmdMagic(Magics, Configurable):
                 "-t", "--table", type=str, help="Table name", required=True
             )
 
+            parser.add_argument(
+                "-o", "--output", type=str, help="Store report location", required=False
+            )
+
             args = parser.parse_args(others)
 
             user_ns = self.shell.user_ns.copy()
             user_ns.update(local_ns)
 
-            return inspect.get_table_statistics(
+            report = inspect.get_table_statistics(
                 name=args.table, config=self, user_ns=user_ns
             )
+
+            if args.output:
+                with open(args.output, "w") as f:
+                    f.write(report._repr_html_())
+
+            return report
         else:
             raise UsageError(
                 f"%sqlcmd has no command: {cmd_name!r}. "

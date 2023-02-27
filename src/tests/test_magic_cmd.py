@@ -2,6 +2,7 @@ import sqlite3
 
 import pytest
 from IPython.core.error import UsageError
+from pathlib import Path
 
 
 @pytest.mark.parametrize(
@@ -73,7 +74,7 @@ ATTACH DATABASE 'my.db' AS some_schema
     assert "some_number" in out
 
 
-def test_table_profile(ip):
+def test_table_profile(ip, tmp_empty):
     ip.run_cell(
         """
     %%sql sqlite://
@@ -92,8 +93,8 @@ def test_table_profile(ip):
     expected = {
         "count": [8, 8, 8, 6],
         "mean": [12.2165, 0.6875, 88.75, float("NaN")],
-        "min": [10.532, 0.1, 82, float("NaN")],
-        "max": [14.44, 2.48, 98, float("NaN")],
+        "min": [10.532, 0.1, 82, "a"],
+        "max": [14.44, 2.48, 98, "c"],
         "std": [
             1.2784055917989632,
             0.8504914545636036,
@@ -103,7 +104,7 @@ def test_table_profile(ip):
         "25%": [11.2, 0.2, 84.5, float("NaN")],
         "50%": [12.065, 0.305, 88.5, float("NaN")],
         "75%": [13.072500000000002, 1.2275, 92.25, float("NaN")],
-        "unique": [8, 7, 8, 4],
+        "unique": [8, 7, 8, 5],
         "freq": [1, 2, 1, 4],
         "top": [14.44, 0.2, 98, "a"],
     }
@@ -121,7 +122,28 @@ def test_table_profile(ip):
 
         number = row.get_string(fields=["number"], border=False, header=False).strip()
 
+        word = row.get_string(fields=["word"], border=False, header=False).strip()
+
         if criteria in expected:
             assert rating == str(expected[criteria][0])
             assert price == str(expected[criteria][1])
             assert number == str(expected[criteria][2])
+            assert word == str(expected[criteria][3])
+
+
+def test_table_profile_store(ip, tmp_empty):
+    ip.run_cell(
+        """
+    %%sql sqlite://
+    CREATE TABLE test_store (rating, price, number, symbol);
+    INSERT INTO test_store VALUES (14.44, 2.48, 82, 'a');
+    INSERT INTO test_store VALUES (13.13, 1.50, 93, 'b');
+    INSERT INTO test_store VALUES (12.59, 0.20, 98, 'a');
+    INSERT INTO test_store VALUES (11.54, 0.41, 89, 'a');
+    """
+    )
+
+    ip.run_cell("%sqlcmd profile -t test_store --output test_report.html")
+
+    report = Path("test_report.html")
+    assert report.is_file()

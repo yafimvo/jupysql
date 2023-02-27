@@ -86,3 +86,11 @@ CALL sqlite_attach('example.db');
 ```{code-cell} ipython3
 %sqlcmd profile -t track
 ```
+
+### Saving report as HTML
+
+To save the generated report as an HTML file, use the `--output`/`-o` attribute followed by the desired file name
+
+```
+%sqlcmd profile -t track --output my-report.html
+```
