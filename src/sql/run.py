@@ -373,8 +373,7 @@ def _commit(conn, config, manual_commit):
         try:
             conn.session.execute("commit")
         except sqlalchemy.exc.OperationalError:
-            pass  # not all engines can commit
-
+            print("The database does not support the COMMIT command")
 
 def run(conn, sql, config, user_namespace):
     if sql.strip():
@@ -401,7 +400,8 @@ def run(conn, sql, config, user_namespace):
                     except Exception as e:
                         print(
                             "The database driver doesn't support "
-                            "such AUTOCOMMIT execution option", "\nException: ", e
+                            "such AUTOCOMMIT execution option\n\n"
+                            "Message from the database driver: \n\tException:", e, "\n"
                         )
                         manual_commit = True
                 result = conn.session.execute(txt, user_namespace)

@@ -2,7 +2,7 @@
 
 ## 0.5.7dev
 
-* [Fix] Addresses enable AUTOCOMMIT config issue in PostgreSQL ([#90](https://github.com/ploomber/jupysql/issues/90))
+* [Fix] Addresses enable AUTOCOMMIT config issue in PostgreSQL #90
 
 ## 0.5.6 (2023-02-16)
 
