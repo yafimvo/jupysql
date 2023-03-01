@@ -162,21 +162,25 @@ def test_connection_args_enforce_json(ip):
     assert result.error_in_exec
 
 
-@pytest.mark.skipif(platform.system() == "Windows", reason="failing on windows")
+@pytest.mark.skipif(platform.system() == "Linux" or platform.system() == "Darwin", reason="should fail on linux and mac")
+def test_connection_args_in_connection_should_pass_on_windows(ip):
+    ip.run_cell('%sql --connection_arguments {\\"timeout\\":10} sqlite:///:memory:')
+    result = ip.run_cell("%sql --connections")
+    assert "timeout" in result.result["sqlite:///:memory:"].connect_args
+
+
 def test_connection_args_in_connection(ip):
     ip.run_cell('%sql --connection_arguments {"timeout":10} sqlite:///:memory:')
     result = ip.run_cell("%sql --connections")
     assert "timeout" in result.result["sqlite:///:memory:"].connect_args
 
 
-@pytest.mark.skipif(platform.system() == "Windows", reason="failing on windows")
 def test_connection_args_single_quotes(ip):
     ip.run_cell("%sql --connection_arguments '{\"timeout\": 10}' sqlite:///:memory:")
     result = ip.run_cell("%sql --connections")
     assert "timeout" in result.result["sqlite:///:memory:"].connect_args
 
 
-@pytest.mark.skipif(platform.system() == "Windows", reason="failing on windows")
 def test_connection_args_double_quotes(ip):
     ip.run_cell('%sql --connection_arguments "{\\"timeout\\": 10}" sqlite:///:memory:')
     result = ip.run_cell("%sql --connections")
