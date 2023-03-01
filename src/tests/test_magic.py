@@ -162,7 +162,10 @@ def test_connection_args_enforce_json(ip):
     assert result.error_in_exec
 
 
-@pytest.mark.skipif(platform.system() == "Linux" or platform.system() == "Darwin", reason="should fail on linux and mac")
+@pytest.mark.skipif(
+    platform.system() == "Linux" or platform.system() == "Darwin",
+    reason="should fail on linux and mac",
+)
 def test_connection_args_in_connection_should_pass_on_windows(ip):
     ip.run_cell('%sql --connection_arguments {\\"timeout\\":10} sqlite:///:memory:')
     result = ip.run_cell("%sql --connections")
@@ -259,10 +262,11 @@ def test_autopolars(ip):
     dframe = runsql(ip, "SELECT * FROM test;")
 
     import polars as pl
+
     assert type(dframe) == pl.DataFrame
     assert not dframe.is_empty()
     assert len(dframe.shape) == 2
-    assert dframe['name'][0] == "foo"
+    assert dframe["name"][0] == "foo"
 
 
 def test_mutex_autopolars_autopandas(ip):
@@ -270,11 +274,13 @@ def test_mutex_autopolars_autopandas(ip):
     assert type(dframe) == ResultSet
 
     import polars as pl
+
     ip.run_line_magic("config", "SqlMagic.autopolars = True")
     dframe = runsql(ip, "SELECT * FROM test;")
     assert type(dframe) == pl.DataFrame
 
     import pandas as pd
+
     ip.run_line_magic("config", "SqlMagic.autopandas = True")
     dframe = runsql(ip, "SELECT * FROM test;")
     assert type(dframe) == pd.DataFrame
