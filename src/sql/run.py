@@ -366,7 +366,7 @@ def _commit(conn, config, manual_commit):
         and all(
             dialect not in str(conn.dialect) for dialect in _COMMIT_BLACKLIST_DIALECTS
         )
-        and not manual_commit
+        and manual_commit
     )
 
     if _should_commit:
@@ -400,7 +400,8 @@ def run(conn, sql, config, user_namespace):
                     except Exception as e:
                         print(
                             "The database driver doesn't support "
-                            "such AUTOCOMMIT execution option\n\n"
+                            "such AUTOCOMMIT execution option\n"
+                            "Perhaps you can try running a manual COMMIT command\n\n"
                             "Message from the database driver: \n\tException:", e, "\n"
                         )
                         manual_commit = True
