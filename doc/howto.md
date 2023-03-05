@@ -9,6 +9,11 @@ kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
+myst:
+  html_meta:
+    description lang=en: Recipes for JupySQL
+    keywords: jupyter, sql, jupysql
+    property=og:locale: en_US
 ---
 
 ```{code-cell} ipython3
