@@ -4,6 +4,10 @@
 format: jb-book
 root: quick-start
 parts:
+  - caption: Interactive demo
+    chapters:
+    - file: interactive-demo/interactive_nb
+
   - caption: User Guide
     chapters:
     - file: intro
