@@ -587,6 +587,10 @@ def test_error_on_invalid_connection_string_with_possible_typo(ip_empty, clean_c
 
 def test_jupysql_alias():
     assert SqlMagic.magics == {
-        "line": {'interactive_test': 'interactive_test', 'jupysql': 'execute', 'sql': 'execute'},
+        "line": {
+            "interactive_test": "interactive_test",
+            "jupysql": "execute",
+            "sql": "execute",
+        },
         "cell": {"jupysql": "execute", "sql": "execute"},
     }
