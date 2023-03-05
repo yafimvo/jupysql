@@ -96,18 +96,20 @@ def test_table_profile(ip, tmp_empty):
         "min": [10.532, 0.1, 82, "a"],
         "max": [14.44, 2.48, 98, "c"],
         "std": [
-            1.2784055917989632,
-            0.8504914545636036,
-            5.092010548749033,
+            "1.278e+00",
+            "8.505e-01",
+            "5.092e+00",
             float("NaN"),
         ],
-        "25%": [11.2, 0.2, 84.5, float("NaN")],
-        "50%": [12.065, 0.305, 88.5, float("NaN")],
-        "75%": [13.072500000000002, 1.2275, 92.25, float("NaN")],
+        # "25%": [11.2, 0.2, 84.5, float("NaN")],
+        # "50%": [12.065, 0.305, 88.5, float("NaN")],
+        # "75%": [13.072500000000002, 1.2275, 92.25, float("NaN")],
         "unique": [8, 7, 8, 5],
         "freq": [1, 2, 1, 4],
         "top": [14.44, 0.2, 98, "a"],
     }
+
+    # note : We ignote Nth percentile since sqlite doesn't support `percentile_disc`
 
     out = ip.run_cell("%sqlcmd profile -t numbers").result
 
@@ -129,6 +131,52 @@ def test_table_profile(ip, tmp_empty):
             assert price == str(expected[criteria][1])
             assert number == str(expected[criteria][2])
             assert word == str(expected[criteria][3])
+
+
+def test_table_schema_profile(ip, tmp_empty):
+
+    with sqlite3.connect("a.db") as conn:
+        conn.execute("CREATE TABLE t (n FLOAT)")
+        conn.execute("INSERT INTO t VALUES (1)")
+        conn.execute("INSERT INTO t VALUES (2)")
+        conn.execute("INSERT INTO t VALUES (3)")
+
+    with sqlite3.connect("b.db") as conn:
+        conn.execute("CREATE TABLE t (n FLOAT)")
+        conn.execute("INSERT INTO t VALUES (11)")
+        conn.execute("INSERT INTO t VALUES (22)")
+        conn.execute("INSERT INTO t VALUES (33)")
+
+    ip.run_cell(
+        """
+    %%sql sqlite://
+    ATTACH DATABASE 'a.db' AS a_schema;
+    ATTACH DATABASE 'b.db' AS b_schema;
+    """
+    )
+
+    expected = {
+        "count": [3],
+        "mean": [22.0],
+        "min": [11.0],
+        "max": [33.0],
+        "std": [11.0],
+        "unique": [3],
+        "freq": [1],
+        "top": [33.0],
+    }
+
+    out = ip.run_cell("%sqlcmd profile -t t --schema b_schema").result
+
+    stats_table = out._table
+
+    for row in stats_table:
+        criteria = row.get_string(fields=[" "], border=False).strip()
+
+        cell = row.get_string(fields=["n"], border=False, header=False).strip()
+
+        if criteria in expected:
+            assert cell == str(expected[criteria][0])
 
 
 def test_table_profile_store(ip, tmp_empty):

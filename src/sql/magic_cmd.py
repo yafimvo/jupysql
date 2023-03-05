@@ -87,6 +87,10 @@ class SqlCmdMagic(Magics, Configurable):
             )
 
             parser.add_argument(
+                "-s", "--schema", type=str, help="Schema name", required=False
+            )
+
+            parser.add_argument(
                 "-o", "--output", type=str, help="Store report location", required=False
             )
 
@@ -96,7 +100,7 @@ class SqlCmdMagic(Magics, Configurable):
             user_ns.update(local_ns)
 
             report = inspect.get_table_statistics(
-                name=args.table, config=self, user_ns=user_ns
+                schema=args.schema, name=args.table, config=self, user_ns=user_ns
             )
 
             if args.output:

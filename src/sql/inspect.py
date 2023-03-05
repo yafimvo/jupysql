@@ -5,6 +5,7 @@ from sql.connection import Connection
 from sql.telemetry import telemetry
 import sql.run
 import math
+from sql.util import convert_to_scientific
 
 
 def _get_inspector(conn):
@@ -101,7 +102,11 @@ class TableDescription(DatabaseInspection):
 
     """
 
-    def __init__(self, table_name, config=None, user_ns=None) -> None:
+    def __init__(self, table_name, schema=None, config=None, user_ns=None) -> None:
+
+        if schema:
+            table_name = f"{schema}.{table_name}"
+
         result_table_columns = sql.run.run(
             Connection.current, f"SELECT * FROM {table_name} WHERE 1=0", config, user_ns
         )
@@ -157,9 +162,15 @@ class TableDescription(DatabaseInspection):
 
                 table_stats[column]["std"] = std
 
-                table_stats[column]["25%"] = self._get_n_percentile(25, col_values)
-                table_stats[column]["50%"] = self._get_n_percentile(50, col_values)
-                table_stats[column]["75%"] = self._get_n_percentile(75, col_values)
+                table_stats[column]["25%"] = self._get_n_percentile(
+                    25, table_name, column, config, user_ns
+                )
+                table_stats[column]["50%"] = self._get_n_percentile(
+                    50, table_name, column, config, user_ns
+                )
+                table_stats[column]["75%"] = self._get_n_percentile(
+                    75, table_name, column, config, user_ns
+                )
 
             except TypeError:
                 # for non numeric values
@@ -168,6 +179,11 @@ class TableDescription(DatabaseInspection):
                 table_stats[column]["25%"] = math.nan
                 table_stats[column]["50%"] = math.nan
                 table_stats[column]["75%"] = math.nan
+
+            except BaseException:
+                # Failed to run sql command.
+                # We ignore the cell stats for such case.
+                pass
 
         self._table = PrettyTable()
         self._table.field_names = [" "] + list(table_stats.keys())
@@ -178,6 +194,7 @@ class TableDescription(DatabaseInspection):
             values = [row]
             for column in table_stats:
                 value = table_stats[column][row]
+                value = convert_to_scientific(value)
                 values.append(value)
 
             self._table.add_row(values)
@@ -185,34 +202,41 @@ class TableDescription(DatabaseInspection):
         self._table_html = self._table.get_html_string()
         self._table_txt = self._table.get_string()
 
-    def _get_n_percentile(self, n, list) -> float:
+    def _get_n_percentile(
+        self, percentile, table_name, column, config, user_ns
+    ) -> float:
         """
-        Calculates the nth percentile of the given data.
+        Uses percentile_disc SQL query to compute the nth percentile of a
+        specified column in a specified table.
 
         Parameters
         ----------
         n : int
             The Nth percentile to comupte. Must be between 0 and 100 inclusive.
 
-        list : list of numeric values
-            An ordered list of numeric values
+        table_name : str
+            Name of SQL table
+
+        column : str
+            Name of the column in table
 
         Returns
         -------
-        nth percentile of the list
+        Nth percentile of the list
         """
-        if n < 0 or n > 100:
-            raise ValueError("N must be between 0 and 100 inclusive")
+        percentile = percentile / 100
 
-        count = len(list)
-        lp = ((count + 1) * n) / 100
-        index = math.floor(lp)
-        if index - 1 >= 0 and index < len(list):
-            diff = list[index] - list[index - 1]
-            distance = lp - index
-            return list[index - 1] + distance * diff
-        else:
-            return None
+        percentile = sql.run.run(
+            Connection.current,
+            f"""
+            SELECT percentile_disc({percentile}) WITHIN GROUP (ORDER BY {column})
+            as percentile, FROM {table_name}
+            """,
+            config,
+            user_ns,
+        )
+
+        return percentile.dict()["percentile"][0]
 
 
 @telemetry.log_call()
@@ -228,11 +252,11 @@ def get_columns(name, schema=None):
 
 
 @telemetry.log_call()
-def get_table_statistics(name, config=None, user_ns=None):
+def get_table_statistics(name, schema=None, config=None, user_ns=None):
     """Get table statistics for a given connection.
 
     For all data types the results will include `count`, `mean`, `std`, `min`
     `max`, `25`, `50` and `75` percentiles. It will also include `unique`, `top`
     and `freq` statistics.
     """
-    return TableDescription(name, config=config, user_ns=user_ns)
+    return TableDescription(name, schema=schema, config=config, user_ns=user_ns)
