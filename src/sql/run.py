@@ -106,13 +106,18 @@ class ResultSet(list, ColumnGuesserMixin):
         self.keys = {}
         if sqlaproxy.returns_rows:
             self.keys = sqlaproxy.keys()
-            if config.autolimit:
+            if isinstance(config.autolimit, bool):
                 list.__init__(self, sqlaproxy.fetchmany(size=config.autolimit))
             else:
                 list.__init__(self, sqlaproxy.fetchall())
             self.field_names = unduplicate_field_names(self.keys)
+
+            _style = None
+            if isinstance(config.style, str):
+                _style = prettytable.__dict__[config.style.upper()]
+
             self.pretty = PrettyTable(
-                self.field_names, style=prettytable.__dict__[config.style.upper()]
+                self.field_names, style=_style
             )
         else:
             list.__init__(self, [])
@@ -347,7 +352,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos : pos + size]
+                yield source_list[pos: pos + size]
                 pos += size
 
         self.fetchmany = fetchmany
@@ -413,6 +418,12 @@ def run(conn, sql, config, user_namespace):
         # returning only last result, intentionally
     else:
         return "Connected: %s" % conn.name
+
+
+def run_raw(conn, sql, config):
+    result = conn.session.execute(sql)
+    resultset = ResultSet(result, config)
+    return resultset
 
 
 class PrettyTable(prettytable.PrettyTable):

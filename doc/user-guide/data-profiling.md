@@ -24,7 +24,6 @@ Availble statistics:
 * The mean, standard deviation, min and max values
 * The percentiles of your data: 25%, 50% and 75%.
 
-
 ## Examples
 
 ### DuckDB
@@ -46,7 +45,7 @@ if not Path("yellow_tripdata_2021-01.parquet").is_file():
 Setup
 
 ```{note}
-this example requires duckdb-engine: `pip install duckdb-engine`
+This example requires duckdb-engine: `pip install duckdb-engine`
 ```
 
 Load the extension and connect to an in-memory DuckDB database:

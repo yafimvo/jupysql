@@ -23,8 +23,7 @@ install_requires = [
     "ipython-genutils>=0.1.0",
     "jinja2",
     "ploomber-core>=0.2.4",
-    'importlib-metadata;python_version<"3.8"',
-    "numpy"
+    'importlib-metadata;python_version<"3.8"'
 ]
 
 DEV = [

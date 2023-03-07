@@ -1,6 +1,3 @@
-import numpy as np
-
-
 def convert_to_scientific(value):
     """
     Converts value to scientific notation if necessary
@@ -15,7 +12,7 @@ def convert_to_scientific(value):
         and not isinstance(value, bool)
         and _is_long_number(value)
     ):
-        new_value = np.format_float_scientific(value, exp_digits=2, precision=3)
+        new_value = "{:,.3e}".format(value)
 
     else:
         new_value = value

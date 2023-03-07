@@ -78,7 +78,7 @@ def test_table_profile(ip, tmp_empty):
     ip.run_cell(
         """
     %%sql sqlite://
-    CREATE TABLE numbers (rating, price, number, word);
+    CREATE TABLE numbers (rating float, price float, number int, word varchar(50));
     INSERT INTO numbers VALUES (14.44, 2.48, 82, 'a');
     INSERT INTO numbers VALUES (13.13, 1.50, 93, 'b');
     INSERT INTO numbers VALUES (12.59, 0.20, 98, 'a');
@@ -92,28 +92,19 @@ def test_table_profile(ip, tmp_empty):
 
     expected = {
         "count": [8, 8, 8, 6],
-        "mean": [12.2165, 0.6875, 88.75, float("NaN")],
+        "mean": [12.2165, "6.875e-01", 88.75, 0.0],
         "min": [10.532, 0.1, 82, "a"],
         "max": [14.44, 2.48, 98, "c"],
-        "std": [
-            "1.278e+00",
-            "8.505e-01",
-            "5.092e+00",
-            float("NaN"),
-        ],
-        # "25%": [11.2, 0.2, 84.5, float("NaN")],
-        # "50%": [12.065, 0.305, 88.5, float("NaN")],
-        # "75%": [13.072500000000002, 1.2275, 92.25, float("NaN")],
-        "unique": [8, 7, 8, 5],
+        "unique": [8, 7, 8, 3],
         "freq": [1, 2, 1, 4],
         "top": [14.44, 0.2, 98, "a"],
     }
 
-    # note : We ignote Nth percentile since sqlite doesn't support `percentile_disc`
-
     out = ip.run_cell("%sqlcmd profile -t numbers").result
 
     stats_table = out._table
+
+    assert len(stats_table.rows) == len(expected)
 
     for row in stats_table:
         criteria = row.get_string(fields=[" "], border=False).strip()
@@ -126,11 +117,11 @@ def test_table_profile(ip, tmp_empty):
 
         word = row.get_string(fields=["word"], border=False, header=False).strip()
 
-        if criteria in expected:
-            assert rating == str(expected[criteria][0])
-            assert price == str(expected[criteria][1])
-            assert number == str(expected[criteria][2])
-            assert word == str(expected[criteria][3])
+        assert criteria in expected
+        assert rating == str(expected[criteria][0])
+        assert price == str(expected[criteria][1])
+        assert number == str(expected[criteria][2])
+        assert word == str(expected[criteria][3])
 
 
 def test_table_schema_profile(ip, tmp_empty):

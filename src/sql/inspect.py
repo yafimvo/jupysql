@@ -82,7 +82,7 @@ class TableDescription(DatabaseInspection):
 
     Descriptive statistics are:
 
-    Count - Number of all non empty values
+    Count - Number of all not None values
 
     Mean - Mean of the values
 
@@ -94,7 +94,7 @@ class TableDescription(DatabaseInspection):
 
     25h, 50h and 75h percentiles
 
-    Unique - Number of unique values
+    Unique - Number of not None unique values
 
     Top - The most frequent value
 
@@ -102,75 +102,83 @@ class TableDescription(DatabaseInspection):
 
     """
 
-    def __init__(self, table_name, schema=None, config=None, user_ns=None) -> None:
-
+    def __init__(self, table_name, schema=None, config=None) -> None:
         if schema:
             table_name = f"{schema}.{table_name}"
 
-        result_table_columns = sql.run.run(
-            Connection.current, f"SELECT * FROM {table_name} WHERE 1=0", config, user_ns
-        )
-
-        columns = result_table_columns.keys
+        columns = sql.run.run_raw(
+            Connection.current, f"SELECT * FROM {table_name} WHERE 1=0", config
+        ).keys
 
         table_stats = dict({})
 
         for column in columns:
             table_stats[column] = dict()
-            result_col_unique_values = sql.run.run(
+            result_col_freq_values = sql.run.run_raw(
                 Connection.current,
-                f"SELECT COUNT(DISTINCT {column}) as unique_count FROM {table_name}",
-                config,
-                user_ns,
-            )
-
-            result_col_freq_values = sql.run.run(
-                Connection.current,
-                f"""SELECT {column}, COUNT({column}) as frequency FROM {table_name}
+                f"""SELECT {column} as top,
+                COUNT({column}) as frequency FROM {table_name}
                 GROUP BY {column} ORDER BY Count({column}) Desc""",
                 config,
-                user_ns,
-            )
+            ).dict()
 
-            result_non_empty_values = sql.run.run(
+            # get all non None values, min, max and avg.
+            result_value_values = sql.run.run_raw(
                 Connection.current,
-                f"""SELECT {column} FROM {table_name} WHERE {column}
-                IS NOT NULL AND TRIM({column}) <> ''
-                ORDER BY {column} ASC
+                f"""
+                SELECT MIN({column}) AS min,
+                MAX({column}) AS max,
+                COUNT(DISTINCT {column}) AS unique_count,
+                COUNT({column}) AS total
+                FROM {table_name}
+                WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
                 """,
                 config,
-                user_ns,
-            )
+            ).dict()
 
-            col_values = result_non_empty_values.dict()[column]
-            count = len(col_values)
-            table_stats[column]["count"] = count
-            table_stats[column]["freq"] = result_col_freq_values.dict()["frequency"][0]
-            table_stats[column]["unique"] = result_col_unique_values.dict()[
-                "unique_count"
-            ][0]
-            table_stats[column]["top"] = result_col_freq_values.dict()[column][0]
-            table_stats[column]["min"] = col_values[0]
-            table_stats[column]["max"] = col_values[count - 1]
+            table_stats[column]["freq"] = result_col_freq_values["frequency"][0]
+            table_stats[column]["top"] = result_col_freq_values["top"][0]
+            table_stats[column]["count"] = result_value_values["total"][0]
+            table_stats[column]["unique"] = result_value_values["unique_count"][0]
+            table_stats[column]["min"] = result_value_values["min"][0]
+            table_stats[column]["max"] = result_value_values["max"][0]
+
+            avg = None
+            try:
+                results_avg = sql.run.run_raw(
+                    Connection.current,
+                    f"""
+                                SELECT AVG({column}) AS avg
+                                FROM {table_name}
+                                WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
+                                """,
+                    config,
+                ).dict()
+                avg = results_avg["avg"][0]
+            except BaseException:
+                avg = math.nan
+
+            table_stats[column]["mean"] = avg
 
             try:
-                mean = sum(col_values) / count
-                table_stats[column]["mean"] = mean
+                # Note: This STDEV and PERCENTILE_DISC will work only on DuckDB
+                result = sql.run.run_raw(
+                    Connection.current,
+                    f"""
+                    SELECT
+                        stddev_pop({column}) as std,
+                        percentile_disc(0.25) WITHIN GROUP (ORDER BY {column}) as p25,
+                        percentile_disc(0.50) WITHIN GROUP (ORDER BY {column}) as p50,
+                        percentile_disc(0.75) WITHIN GROUP (ORDER BY {column}) as p75
+                    FROM {table_name}
+                    """,
+                    config,
+                ).dict()
 
-                values_sum = sum([(math.pow((v - mean), 2)) for v in col_values])
-                std = math.sqrt(values_sum / (count - 1))
-
-                table_stats[column]["std"] = std
-
-                table_stats[column]["25%"] = self._get_n_percentile(
-                    25, table_name, column, config, user_ns
-                )
-                table_stats[column]["50%"] = self._get_n_percentile(
-                    50, table_name, column, config, user_ns
-                )
-                table_stats[column]["75%"] = self._get_n_percentile(
-                    75, table_name, column, config, user_ns
-                )
+                table_stats[column]["std"] = result["std"][0]
+                table_stats[column]["25%"] = result["p25"][0]
+                table_stats[column]["50%"] = result["p50"][0]
+                table_stats[column]["75%"] = result["p75"][0]
 
             except TypeError:
                 # for non numeric values
@@ -193,7 +201,10 @@ class TableDescription(DatabaseInspection):
         for row in rows:
             values = [row]
             for column in table_stats:
-                value = table_stats[column][row]
+                if row in table_stats[column]:
+                    value = table_stats[column][row]
+                else:
+                    value = ""
                 value = convert_to_scientific(value)
                 values.append(value)
 
@@ -201,42 +212,6 @@ class TableDescription(DatabaseInspection):
 
         self._table_html = self._table.get_html_string()
         self._table_txt = self._table.get_string()
-
-    def _get_n_percentile(
-        self, percentile, table_name, column, config, user_ns
-    ) -> float:
-        """
-        Uses percentile_disc SQL query to compute the nth percentile of a
-        specified column in a specified table.
-
-        Parameters
-        ----------
-        n : int
-            The Nth percentile to comupte. Must be between 0 and 100 inclusive.
-
-        table_name : str
-            Name of SQL table
-
-        column : str
-            Name of the column in table
-
-        Returns
-        -------
-        Nth percentile of the list
-        """
-        percentile = percentile / 100
-
-        percentile = sql.run.run(
-            Connection.current,
-            f"""
-            SELECT percentile_disc({percentile}) WITHIN GROUP (ORDER BY {column})
-            as percentile, FROM {table_name}
-            """,
-            config,
-            user_ns,
-        )
-
-        return percentile.dict()["percentile"][0]
 
 
 @telemetry.log_call()
@@ -252,11 +227,11 @@ def get_columns(name, schema=None):
 
 
 @telemetry.log_call()
-def get_table_statistics(name, schema=None, config=None, user_ns=None):
+def get_table_statistics(name, schema=None, config=None):
     """Get table statistics for a given connection.
 
     For all data types the results will include `count`, `mean`, `std`, `min`
     `max`, `25`, `50` and `75` percentiles. It will also include `unique`, `top`
     and `freq` statistics.
     """
-    return TableDescription(name, schema=schema, config=config, user_ns=user_ns)
+    return TableDescription(name, schema=schema, config=config)

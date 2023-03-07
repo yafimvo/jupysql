@@ -5,8 +5,7 @@ from IPython.utils.process import arg_split
 from IPython.core.magic import (
     Magics,
     line_magic,
-    magics_class,
-    needs_local_scope,
+    magics_class
 )
 from IPython.core.magic_arguments import argument, magic_arguments
 from IPython.core.error import UsageError
@@ -34,22 +33,10 @@ class CmdParser(argparse.ArgumentParser):
 class SqlCmdMagic(Magics, Configurable):
     """%sqlcmd magic"""
 
-    displaycon = True
-    autolimit = None
-    style = "DEFAULT"
-    short_errors = True
-    displaylimit = None
-    autopandas = False
-    column_local_vars = False
-    feedback = False
-    autocommit = False
-    autopolars = False
-
-    @needs_local_scope
     @line_magic("sqlcmd")
     @magic_arguments()
     @argument("line", default="", type=str, help="Command name")
-    def execute(self, line="", cell="", local_ns=None):
+    def execute(self, line="", cell=""):
         """
         Command
         """
@@ -96,11 +83,8 @@ class SqlCmdMagic(Magics, Configurable):
 
             args = parser.parse_args(others)
 
-            user_ns = self.shell.user_ns.copy()
-            user_ns.update(local_ns)
-
             report = inspect.get_table_statistics(
-                schema=args.schema, name=args.table, config=self, user_ns=user_ns
+                schema=args.schema, name=args.table, config=self.config
             )
 
             if args.output:
