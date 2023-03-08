@@ -222,7 +222,7 @@ def test_telemetry_execute_command_has_connection_info(
          ),
     ],
 )
-def test_profile_query(request, ip_with_dynamic_db, table, table_columns, expected, capsys):
+def test_profile_query(request, ip_with_dynamic_db, table, table_columns, expected):
     ip_with_dynamic_db = request.getfixturevalue(ip_with_dynamic_db)
 
     out = ip_with_dynamic_db.run_cell(
