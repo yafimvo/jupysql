@@ -106,7 +106,7 @@ class ResultSet(list, ColumnGuesserMixin):
         self.keys = {}
         if sqlaproxy.returns_rows:
             self.keys = sqlaproxy.keys()
-            if isinstance(config.autolimit, int):
+            if isinstance(config.autolimit, int) and config.autolimit > 0:
                 list.__init__(self, sqlaproxy.fetchmany(size=config.autolimit))
             else:
                 list.__init__(self, sqlaproxy.fetchall())
