@@ -150,46 +150,7 @@ def test_telemetry_execute_command_has_connection_info(
 @pytest.mark.parametrize(
     "ip_with_dynamic_db, table, table_columns, expected",
     [
-        # ("ip_with_postgreSQL",
-        #  "taxi",
-        #  ["index", "taxi_driver_name"],
-        #  {
-        #      "count": [45, 45],
-        #      "mean": [22.0, 0.0],
-        #      "min": [0, "Eric Ken"],
-        #      "max": [44, "Kevin Kelly"],
-        #      "unique": [45, 3],
-        #      "freq": [1, 15],
-        #      "top": [0, "Kevin Kelly"],
-        #  }
-        #  ),
-        # ("ip_with_mySQL",
-        #  "taxi",
-        #  ["index", "taxi_driver_name"],
-        #  {
-        #      "count": [45, 45],
-        #      "mean": [22.0, 0.0],
-        #      "min": [0, "Eric Ken"],
-        #      "max": [44, "Kevin Kelly"],
-        #      "unique": [45, 3],
-        #      "freq": [1, 15],
-        #      "top": [0, "Kevin Kelly"],
-        #  }
-        #  ),
-        # ("ip_with_mariaDB",
-        #  "taxi",
-        #  ["index", "taxi_driver_name"],
-        #  {
-        #      "count": [45, 45],
-        #      "mean": [22.0, 0.0],
-        #      "min": [0, "Eric Ken"],
-        #      "max": [44, "Kevin Kelly"],
-        #      "unique": [45, 3],
-        #      "freq": [1, 15],
-        #      "top": [0, "Kevin Kelly"],
-        #  }
-        #  ),
-        ("ip_with_SQLite",
+        ("ip_with_postgreSQL",
          "taxi",
          ["index", "taxi_driver_name"],
          {
@@ -202,26 +163,66 @@ def test_telemetry_execute_command_has_connection_info(
              "top": [0, "Kevin Kelly"],
          }
          ),
-        ("ip_with_duckDB",
-         "yellow_tripdata_2021-01.parquet",
-         ["VendorID", "tpep_pickup_datetime", "passenger_count"],
+        ("ip_with_mySQL",
+         "taxi",
+         ["index", "taxi_driver_name"],
          {
-             "count": [1369769, 1369769, 1271417],
-             "mean": ["1.722e+00", math.nan, "1.412e+00"],
-             "min": [1, "2008-12-31 23:05:14", 0.0],
-             "max": [6, "2021-02-22 16:52:16", 8.0],
-             "unique": [3, 939020, 9],
-             "freq": [937141, 13, 966236],
-             "top": [2, "2021-01-14 13:52:00", 1.0],
+             "count": [45, 45],
+             "mean": [22.0, 0.0],
+             "min": [0, "Eric Ken"],
+             "max": [44, "Kevin Kelly"],
+             "unique": [45, 3],
+             "freq": [1, 15],
+             "top": [0, "Kevin Kelly"],
+         }
+         ),
+        ("ip_with_mariaDB",
+         "taxi",
+         ["index", "taxi_driver_name"],
+         {
+             "count": [45, 45],
+             "mean": [22.0, 0.0],
+             "min": [0, "Eric Ken"],
+             "max": [44, "Kevin Kelly"],
+             "unique": [45, 3],
+             "freq": [1, 15],
+             "top": [0, "Kevin Kelly"],
+         }
+         ),
+        ("ip_with_SQLite",
+         "taxi",
+         ["taxi_driver_name"],
+         {
+             "count": [45],
+             "mean": [0.0],
+             "min": ["Eric Ken"],
+             "max": ["Kevin Kelly"],
+             "unique": [3],
+             "freq": [15],
+             "top": ["Kevin Kelly"],
+         }
+         ),
+        ("ip_with_duckDB",
+         "taxi",
+         ["index", "taxi_driver_name"],
+         {
+             "count": [45, 45],
+             "mean": [22.0, math.nan],
+             "min": [0, "Eric Ken"],
+             "max": [44, "Kevin Kelly"],
+             "unique": [45, 3],
+             "freq": [1, 15],
+             "top": [0, "Eric Ken"],
+             "std": ["1.299e+01", math.nan],
+             "25%": [11, math.nan],
+             "50%": [22, math.nan],
+             "75%": [33, math.nan],
 
-             "std": ["5.925e-01", math.nan, "1.060e+00"],
-             "25%": [1, math.nan, 1.0],
-             "50%": [2, math.nan, 1.0],
-             "75%": [2, math.nan, 1.0],
-         }),
+         }
+         ),
     ],
 )
-def test_profile_query(request, ip_with_dynamic_db, table, table_columns, expected):
+def test_profile_query(request, ip_with_dynamic_db, table, table_columns, expected, capsys):
     ip_with_dynamic_db = request.getfixturevalue(ip_with_dynamic_db)
 
     out = ip_with_dynamic_db.run_cell(

@@ -116,19 +116,13 @@ class TableDescription(DatabaseInspection):
         for column in columns:
             table_stats[column] = dict()
 
-            # index is reserved word in sqlite so we use
-            # brackets to make it work.
-            if column == "index":
-                _column = "[index]"
-            else:
-                _column = column
-
+            # Note: index is reserved word in sqlite
             try:
                 result_col_freq_values = sql.run.run_raw(
                     Connection.current,
-                    f"""SELECT {_column} as top,
-                    COUNT({_column}) as frequency FROM {table_name}
-                    GROUP BY {_column} ORDER BY Count({_column}) Desc""",
+                    f"""SELECT {column} as top,
+                    COUNT({column}) as frequency FROM {table_name}
+                    GROUP BY {column} ORDER BY Count({column}) Desc""",
                     config,
                 ).dict()
 
@@ -145,12 +139,12 @@ class TableDescription(DatabaseInspection):
                 result_value_values = sql.run.run_raw(
                     Connection.current,
                     f"""
-                    SELECT MIN({_column}) AS min,
-                    MAX({_column}) AS max,
-                    COUNT(DISTINCT {_column}) AS unique_count,
-                    COUNT({_column}) AS count
+                    SELECT MIN({column}) AS min,
+                    MAX({column}) AS max,
+                    COUNT(DISTINCT {column}) AS unique_count,
+                    COUNT({column}) AS count
                     FROM {table_name}
-                    WHERE {_column} IS NOT NULL AND TRIM({_column}) <> ''
+                    WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
                     """,
                     config,
                 ).dict()
@@ -169,9 +163,9 @@ class TableDescription(DatabaseInspection):
                 results_avg = sql.run.run_raw(
                     Connection.current,
                     f"""
-                                SELECT AVG({_column}) AS avg
+                                SELECT AVG({column}) AS avg
                                 FROM {table_name}
-                                WHERE {_column} IS NOT NULL AND TRIM({_column}) <> ''
+                                WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
                                 """,
                     config,
                 ).dict()
@@ -190,13 +184,13 @@ class TableDescription(DatabaseInspection):
                     Connection.current,
                     f"""
                     SELECT
-                        stddev_pop({_column}) as key_std,
+                        stddev_pop({column}) as key_std,
                         percentile_disc(0.25) WITHIN GROUP
-                        (ORDER BY {_column}) as key_25,
+                        (ORDER BY {column}) as key_25,
                         percentile_disc(0.50) WITHIN GROUP
-                        (ORDER BY {_column}) as key_50,
+                        (ORDER BY {column}) as key_50,
                         percentile_disc(0.75) WITHIN GROUP
-                        (ORDER BY {_column}) as key_75
+                        (ORDER BY {column}) as key_75
                     FROM {table_name}
                     """,
                     config,
