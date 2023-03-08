@@ -111,84 +111,115 @@ class TableDescription(DatabaseInspection):
         ).keys
 
         table_stats = dict({})
+        columns_to_include_in_report = set()
 
         for column in columns:
             table_stats[column] = dict()
-            result_col_freq_values = sql.run.run_raw(
-                Connection.current,
-                f"""SELECT {column} as top,
-                COUNT({column}) as frequency FROM {table_name}
-                GROUP BY {column} ORDER BY Count({column}) Desc""",
-                config,
-            ).dict()
 
-            # get all non None values, min, max and avg.
-            result_value_values = sql.run.run_raw(
-                Connection.current,
-                f"""
-                SELECT MIN({column}) AS min,
-                MAX({column}) AS max,
-                COUNT(DISTINCT {column}) AS unique_count,
-                COUNT({column}) AS total
-                FROM {table_name}
-                WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
-                """,
-                config,
-            ).dict()
+            # index is reserved word in sqlite so we use
+            # brackets to make it work.
+            if column == "index":
+                _column = "[index]"
+            else:
+                _column = column
 
-            table_stats[column]["freq"] = result_col_freq_values["frequency"][0]
-            table_stats[column]["top"] = result_col_freq_values["top"][0]
-            table_stats[column]["count"] = result_value_values["total"][0]
-            table_stats[column]["unique"] = result_value_values["unique_count"][0]
-            table_stats[column]["min"] = result_value_values["min"][0]
-            table_stats[column]["max"] = result_value_values["max"][0]
+            try:
+                result_col_freq_values = sql.run.run_raw(
+                    Connection.current,
+                    f"""SELECT {_column} as top,
+                    COUNT({_column}) as frequency FROM {table_name}
+                    GROUP BY {_column} ORDER BY Count({_column}) Desc""",
+                    config,
+                ).dict()
 
-            avg = None
+                table_stats[column]["freq"] = result_col_freq_values["frequency"][0]
+                table_stats[column]["top"] = result_col_freq_values["top"][0]
+
+                columns_to_include_in_report.update(["freq", "top"])
+
+            except Exception:
+                pass
+
+            try:
+                # get all non None values, min, max and avg.
+                result_value_values = sql.run.run_raw(
+                    Connection.current,
+                    f"""
+                    SELECT MIN({_column}) AS min,
+                    MAX({_column}) AS max,
+                    COUNT(DISTINCT {_column}) AS unique_count,
+                    COUNT({_column}) AS count
+                    FROM {table_name}
+                    WHERE {_column} IS NOT NULL AND TRIM({_column}) <> ''
+                    """,
+                    config,
+                ).dict()
+
+                table_stats[column]["count"] = result_value_values["count"][0]
+                table_stats[column]["unique"] = result_value_values["unique_count"][0]
+                table_stats[column]["min"] = result_value_values["min"][0]
+                table_stats[column]["max"] = result_value_values["max"][0]
+
+                columns_to_include_in_report.update(["count", "unique", "min", "max"])
+
+            except Exception:
+                pass
+
             try:
                 results_avg = sql.run.run_raw(
                     Connection.current,
                     f"""
-                                SELECT AVG({column}) AS avg
+                                SELECT AVG({_column}) AS avg
                                 FROM {table_name}
-                                WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
+                                WHERE {_column} IS NOT NULL AND TRIM({_column}) <> ''
                                 """,
                     config,
                 ).dict()
-                avg = results_avg["avg"][0]
-            except BaseException:
-                avg = math.nan
+                table_stats[column]["mean"] = results_avg["avg"][0]
+                columns_to_include_in_report.update(["mean"])
 
-            table_stats[column]["mean"] = avg
+            except Exception:
+                table_stats[column]["mean"] = math.nan
+
+            # These keys are numeric and work only on duckdb
+            special_numeric_keys = ["std", "25%", "50%", "75%"]
 
             try:
-                # Note: This STDEV and PERCENTILE_DISC will work only on DuckDB
+                # Note: stddev_pop and PERCENTILE_DISC will work only on DuckDB
                 result = sql.run.run_raw(
                     Connection.current,
                     f"""
                     SELECT
-                        stddev_pop({column}) as std,
-                        percentile_disc(0.25) WITHIN GROUP (ORDER BY {column}) as p25,
-                        percentile_disc(0.50) WITHIN GROUP (ORDER BY {column}) as p50,
-                        percentile_disc(0.75) WITHIN GROUP (ORDER BY {column}) as p75
+                        stddev_pop({_column}) as key_std,
+                        percentile_disc(0.25) WITHIN GROUP
+                        (ORDER BY {_column}) as key_25,
+                        percentile_disc(0.50) WITHIN GROUP
+                        (ORDER BY {_column}) as key_50,
+                        percentile_disc(0.75) WITHIN GROUP
+                        (ORDER BY {_column}) as key_75
                     FROM {table_name}
                     """,
                     config,
                 ).dict()
 
-                table_stats[column]["std"] = result["std"][0]
-                table_stats[column]["25%"] = result["p25"][0]
-                table_stats[column]["50%"] = result["p50"][0]
-                table_stats[column]["75%"] = result["p75"][0]
+                for key in special_numeric_keys:
+                    r_key = f'key_{key.replace("%", "")}'
+                    table_stats[column][key] = result[r_key][0]
+
+                columns_to_include_in_report.update(special_numeric_keys)
 
             except TypeError:
                 # for non numeric values
-                table_stats[column]["mean"] = math.nan
-                table_stats[column]["std"] = math.nan
-                table_stats[column]["25%"] = math.nan
-                table_stats[column]["50%"] = math.nan
-                table_stats[column]["75%"] = math.nan
+                for key in special_numeric_keys:
+                    table_stats[column][key] = math.nan
 
-            except BaseException:
+            except Exception as e:
+                # We tried to apply numeric function on
+                # non numeric value, i.e: DateTime
+                if "duckdb.BinderException" in str(e):
+                    for key in special_numeric_keys:
+                        table_stats[column][key] = math.nan
+
                 # Failed to run sql command.
                 # We ignore the cell stats for such case.
                 pass
@@ -196,8 +227,8 @@ class TableDescription(DatabaseInspection):
         self._table = PrettyTable()
         self._table.field_names = [" "] + list(table_stats.keys())
 
-        rows = list(table_stats.items())[0][1].keys()
-
+        rows = list(columns_to_include_in_report)
+        rows.sort(reverse=True)
         for row in rows:
             values = [row]
             for column in table_stats:
