@@ -59,3 +59,6 @@ nosetests.xml
 /.idea
 
 .venv
+
+# Do not include test output
+/result_images/
