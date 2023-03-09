@@ -120,7 +120,7 @@ class TableDescription(DatabaseInspection):
             try:
                 result_col_freq_values = sql.run.run_raw(
                     Connection.current,
-                    f"""SELECT {column} as top,
+                    f"""SELECT DISTINCT {column} as top,
                     COUNT({column}) as frequency FROM {table_name}
                     GROUP BY {column} ORDER BY Count({column}) Desc""",
                     config,
@@ -144,7 +144,7 @@ class TableDescription(DatabaseInspection):
                     COUNT(DISTINCT {column}) AS unique_count,
                     COUNT({column}) AS count
                     FROM {table_name}
-                    WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
+                    WHERE {column} IS NOT NULL
                     """,
                     config,
                 ).dict()
@@ -165,11 +165,11 @@ class TableDescription(DatabaseInspection):
                     f"""
                                 SELECT AVG({column}) AS avg
                                 FROM {table_name}
-                                WHERE {column} IS NOT NULL AND TRIM({column}) <> ''
+                                WHERE {column} IS NOT NULL
                                 """,
                     config,
                 ).dict()
-                table_stats[column]["mean"] = results_avg["avg"][0]
+                table_stats[column]["mean"] = float(results_avg["avg"][0])
                 columns_to_include_in_report.update(["mean"])
 
             except Exception:
@@ -198,7 +198,7 @@ class TableDescription(DatabaseInspection):
 
                 for key in special_numeric_keys:
                     r_key = f'key_{key.replace("%", "")}'
-                    table_stats[column][key] = result[r_key][0]
+                    table_stats[column][key] = float(result[r_key][0])
 
                 columns_to_include_in_report.update(special_numeric_keys)
 
@@ -214,7 +214,7 @@ class TableDescription(DatabaseInspection):
                     for key in special_numeric_keys:
                         table_stats[column][key] = math.nan
 
-                # Failed to run sql command.
+                # Failed to run sql command/func (e.g stddev_pop).
                 # We ignore the cell stats for such case.
                 pass
 

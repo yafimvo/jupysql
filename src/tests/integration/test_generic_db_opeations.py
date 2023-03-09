@@ -150,20 +150,23 @@ def test_telemetry_execute_command_has_connection_info(
 @pytest.mark.parametrize(
     "ip_with_dynamic_db, table, table_columns, expected",
     [
-        pytest.param(
+        (
             "ip_with_postgreSQL",
             "taxi",
-            ["taxi_driver_name"],
+            ["index", "taxi_driver_name"],
             {
-                "count": [45],
-                "mean": [0.0],
-                "min": ["Eric Ken"],
-                "max": ["Kevin Kelly"],
-                "unique": [3],
-                "freq": [15],
-                "top": ["Kevin Kelly"],
+                "count": [45, 45],
+                "mean": [22.0, math.nan],
+                "min": [0, "Eric Ken"],
+                "max": [44, "Kevin Kelly"],
+                "unique": [45, 3],
+                "freq": [1, 15],
+                "top": [0, "Eric Ken"],
+                "std": ["1.299e+01", ""],
+                "25%": [11.0, ""],
+                "50%": [22.0, ""],
+                "75%": [33.0, ""],
             },
-            marks=pytest.mark.xfail(reason="Need to parse results"),
         ),
         pytest.param(
             "ip_with_mySQL",
@@ -179,7 +182,7 @@ def test_telemetry_execute_command_has_connection_info(
                 "top": ["Kevin Kelly"],
             },
             marks=pytest.mark.xfail(
-                reason="Need to get column names from table with a different query"
+                reason="Need to get column names with a different query"
             ),
         ),
         pytest.param(
@@ -196,7 +199,7 @@ def test_telemetry_execute_command_has_connection_info(
                 "top": ["Kevin Kelly"],
             },
             marks=pytest.mark.xfail(
-                reason="Need to get column names from table with a different query"
+                reason="Need to get column names with a different query"
             ),
         ),
         (
@@ -226,9 +229,9 @@ def test_telemetry_execute_command_has_connection_info(
                 "freq": [1, 15],
                 "top": [0, "Eric Ken"],
                 "std": ["1.299e+01", math.nan],
-                "25%": [11, math.nan],
-                "50%": [22, math.nan],
-                "75%": [33, math.nan],
+                "25%": [11.0, math.nan],
+                "50%": [22.0, math.nan],
+                "75%": [33.0, math.nan],
             },
         ),
     ],
