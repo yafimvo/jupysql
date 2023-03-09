@@ -45,7 +45,9 @@ from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
 ## Boxplot
 
 ```{code-cell} ipython3
-ggplot(table="yellow_tripdata_2021-01.parquet") + aes(x="trip_distance") + geom_boxplot()
+ggplot(table="yellow_tripdata_2021-01.parquet")
++ aes(x="trip_distance")
++ geom_boxplot()
 ```
 
 ## Histogram
