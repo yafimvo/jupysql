@@ -287,7 +287,8 @@ FROM "{{table}}"
 
 @requires(["matplotlib"])
 @telemetry.log_call("histogram", payload=True)
-def histogram(payload, table, column, bins, with_=None, conn=None):
+def histogram(payload, table, column, bins, with_=None, conn=None,
+              color=None, edgecolor=None):
     """Plot histogram
 
     Parameters
@@ -329,7 +330,10 @@ def histogram(payload, table, column, bins, with_=None, conn=None):
     payload["connection_info"] = sql.connection.Connection._get_curr_connection_info()
     if isinstance(column, str):
         bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
-        ax.bar(bin_, height, align="center", width=bin_[-1] - bin_[-2])
+        ax.bar(bin_, height, align="center", width=bin_[-1] - bin_[-2],
+               color=color,
+               edgecolor=edgecolor
+               )
         ax.set_title(f"{column!r} from {table!r}")
         ax.set_xlabel(column)
     else:
@@ -342,6 +346,8 @@ def histogram(payload, table, column, bins, with_=None, conn=None):
                 width=bin_[-1] - bin_[-2],
                 alpha=0.5,
                 label=col,
+                color=color,
+                edgecolor=edgecolor
             )
             ax.set_title(f"Histogram from {table!r}")
             ax.legend()
