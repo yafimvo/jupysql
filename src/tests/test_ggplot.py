@@ -9,11 +9,17 @@ conn = duckdb.connect(database=":memory:")
 
 
 @pytest.fixture
-def short_trips_data(ip):
+def short_trips_data(ip, yellow_tripdata):
     ip.run_cell(
         """
+        %sql duckdb://
+        """
+    )
+
+    ip.run_cell(
+        f"""
         %%sql --save short-trips --no-execute
-        select * from "yellow_tripdata_2021-01.parquet"
+        select * from "{yellow_tripdata}"
         WHERE trip_distance < 6.3
         """
     )
@@ -33,17 +39,27 @@ def yellow_tripdata(tmpdir):
     yield file_path_str
 
 
-@image_comparison(baseline_images=["boxplot"])
-def test_ggplot_geom_boxplot(yellow_tripdata):
-    (
-        ggplot(table="yellow_tripdata_2021-01.parquet", conn=conn)
-        + aes(x="trip_distance")
-        + geom_boxplot()
+@image_comparison(baseline_images=["boxplot"], extensions=["png"], remove_text=True)
+def test_ggplot_geom_boxplot(ip, yellow_tripdata):
+    ip.run_cell(
+        """
+    %sql duckdb://
+    """
     )
 
+    (ggplot(table=yellow_tripdata, conn=conn) + aes(x="trip_distance") + geom_boxplot())
 
-@image_comparison(baseline_images=["histogram_default"], extensions=["png"])
-def test_ggplot_geom_histogram(yellow_tripdata):
+
+@image_comparison(
+    baseline_images=["histogram_default"], extensions=["png"], remove_text=True
+)
+def test_ggplot_geom_histogram(ip, yellow_tripdata):
+    ip.run_cell(
+        """
+    %sql duckdb://
+    """
+    )
+
     (
         ggplot(table="yellow_tripdata_2021-01.parquet", conn=conn)
         + aes(x="trip_distance")
@@ -51,7 +67,9 @@ def test_ggplot_geom_histogram(yellow_tripdata):
     )
 
 
-@image_comparison(baseline_images=["histogram_with_default"])
+@image_comparison(
+    baseline_images=["histogram_with_default"], extensions=["png"], remove_text=True
+)
 def test_ggplot_geom_histogram_with(short_trips_data):
     (
         ggplot(table="short-trips", with_="short-trips", conn=conn)
@@ -60,7 +78,9 @@ def test_ggplot_geom_histogram_with(short_trips_data):
     )
 
 
-@image_comparison(baseline_images=["histogram_custom_edgecolor"], extensions=["png"])
+@image_comparison(
+    baseline_images=["histogram_custom_edgecolor"], extensions=["png"], remove_text=True
+)
 def test_ggplot_geom_histogram_edge_color(short_trips_data):
     (
         ggplot(table="short-trips", with_="short-trips", conn=conn)
@@ -69,7 +89,9 @@ def test_ggplot_geom_histogram_edge_color(short_trips_data):
     )
 
 
-@image_comparison(baseline_images=["histogram_custom_color"])
+@image_comparison(
+    baseline_images=["histogram_custom_color"], extensions=["png"], remove_text=True
+)
 def test_ggplot_geom_histogram_color(short_trips_data):
     (
         ggplot(table="short-trips", with_="short-trips", conn=conn)
@@ -78,7 +100,11 @@ def test_ggplot_geom_histogram_color(short_trips_data):
     )
 
 
-@image_comparison(baseline_images=["histogram_custom_color_and_edge"])
+@image_comparison(
+    baseline_images=["histogram_custom_color_and_edge"],
+    extensions=["png"],
+    remove_text=True,
+)
 def test_ggplot_geom_histogram_color_and_edge(short_trips_data):
     (
         ggplot(table="short-trips", with_="short-trips", conn=conn)
