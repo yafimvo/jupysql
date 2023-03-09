@@ -81,7 +81,8 @@ def test_ggplot_geom_histogram_with(short_trips_data):
 
 
 # @image_comparison(
-#     baseline_images=["histogram_custom_edgecolor"], extensions=["png"], remove_text=True
+#     baseline_images=["histogram_custom_edgecolor"], extensions=["png"],
+# remove_text=True
 # )
 # def test_ggplot_geom_histogram_edge_color(short_trips_data):
 #     (
