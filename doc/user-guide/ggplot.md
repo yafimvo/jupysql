@@ -59,7 +59,9 @@ WHERE trip_distance < 6.3
 ```
 
 ```{code-cell} ipython3
-ggplot(table="short-trips", with_="short-trips") + aes(x="trip_distance") + geom_histogram(bins=10)
+ggplot(table="short-trips", with_="short-trips") 
++ aes(x="trip_distance") 
++ geom_histogram(bins=10)
 ```
 
 ## Custom Style
@@ -67,5 +69,7 @@ ggplot(table="short-trips", with_="short-trips") + aes(x="trip_distance") + geom
 We can set a custom style by setting the `color` and `edgecolor` attributes on `geom_histogram`
 
 ```{code-cell} ipython3
-ggplot(table="short-trips", with_="short-trips") + aes(x="trip_distance") + geom_histogram(bins=10, color="#69f0ae", edgecolor="#fff")
+ggplot(table="short-trips", with_="short-trips") 
++ aes(x="trip_distance") 
++ geom_histogram(bins=10, color="#69f0ae", edgecolor="#fff")
 ```
