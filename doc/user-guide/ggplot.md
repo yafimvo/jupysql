@@ -53,11 +53,9 @@ from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
 ## Example : Boxplot
 
 ```{code-cell} ipython3
-(
-    ggplot(table="yellow_tripdata_2021-01.parquet")
-    + aes(x="trip_distance")
-    + geom_boxplot()
-)
+  ggplot(table="yellow_tripdata_2021-01.parquet")
+  + aes(x="trip_distance")
+  + geom_boxplot()
 ```
 
 ## Example : Histogram
@@ -71,11 +69,11 @@ WHERE trip_distance < 6.3
 ```
 
 ```{code-cell} ipython3
-(
-    ggplot(table="short-trips", with_="short-trips")
-    + aes(x="trip_distance")
-    + geom_histogram(bins=10)
-)
+
+  ggplot(table="short-trips", with_="short-trips")
+  + aes(x="trip_distance")
+  + geom_histogram(bins=10)
+
 ```
 
 ## Example : Custom Style
