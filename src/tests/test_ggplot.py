@@ -2,6 +2,8 @@ from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
 from matplotlib.testing.decorators import image_comparison
 import pytest
 import duckdb
+from pathlib import Path
+from urllib.request import urlretrieve
 
 conn = duckdb.connect(database=":memory:")
 
@@ -18,15 +20,17 @@ def short_trips_data(ip):
 
 
 @pytest.fixture
-def yellow_tripdata(tmp_empty):
-    from pathlib import Path
-    from urllib.request import urlretrieve
+def yellow_tripdata(tmpdir):
+    file_path_str = str(tmpdir.join("yellow_tripdata_2021-01.parquet"))
 
-    url = "https://d37ci6vzurychx.cloudfront.net/trip-data/" \
-        "yellow_tripdata_2021-01.parquet"
+    if not Path(file_path_str).is_file():
+        urlretrieve(
+            "https://d37ci6vzurychx.cloudfront.net/trip-data/"
+            "yellow_tripdata_2021-01.parquet",
+            file_path_str,
+        )
 
-    if not Path("yellow_tripdata_2021-01.parquet").is_file():
-        urlretrieve(url, "yellow_tripdata_2021-01.parquet")
+    yield file_path_str
 
 
 @image_comparison(baseline_images=["boxplot"])
