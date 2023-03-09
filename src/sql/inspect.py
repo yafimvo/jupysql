@@ -210,7 +210,7 @@ class TableDescription(DatabaseInspection):
             except Exception as e:
                 # We tried to apply numeric function on
                 # non numeric value, i.e: DateTime
-                if "duckdb.BinderException" in str(e):
+                if "duckdb.BinderException" or "add explicit type casts" in str(e):
                     for key in special_numeric_keys:
                         table_stats[column][key] = math.nan
 
