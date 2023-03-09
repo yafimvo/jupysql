@@ -45,9 +45,9 @@ from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
 ## Boxplot
 
 ```{code-cell} ipython3
-ggplot(table="yellow_tripdata_2021-01.parquet")
+(ggplot(table="yellow_tripdata_2021-01.parquet")
 + aes(x="trip_distance")
-+ geom_boxplot()
++ geom_boxplot())
 ```
 
 ## Histogram
@@ -61,9 +61,9 @@ WHERE trip_distance < 6.3
 ```
 
 ```{code-cell} ipython3
-ggplot(table="short-trips", with_="short-trips")
+(ggplot(table="short-trips", with_="short-trips")
 + aes(x="trip_distance")
-+ geom_histogram(bins=10)
++ geom_histogram(bins=10))
 ```
 
 ## Custom Style
@@ -71,7 +71,7 @@ ggplot(table="short-trips", with_="short-trips")
 We can set a custom style by setting the `color` and `edgecolor` attributes on `geom_histogram`
 
 ```{code-cell} ipython3
-ggplot(table="short-trips", with_="short-trips")
+(ggplot(table="short-trips", with_="short-trips")
 + aes(x="trip_distance")
-+ geom_histogram(bins=10, color="#69f0ae", edgecolor="#fff")
++ geom_histogram(bins=10, color="#69f0ae", edgecolor="#fff"))
 ```
