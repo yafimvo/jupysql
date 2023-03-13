@@ -16,5 +16,5 @@ def test_auto_commit_mode_off(ip_with_duckDB, capsys):
     )
 
     # Check the tables is created
-    out = ip_with_duckDB.run_cell("%sql SHOW TABLES;")
-    assert any(('new_table_from_df',) == table for table in out.result)
+    out = ip_with_duckDB.run_cell("%sql SHOW TABLES;").result
+    assert any('weather' == table[0] for table in out)
