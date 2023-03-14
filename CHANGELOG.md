@@ -1,6 +1,11 @@
 # CHANGELOG
 
-## 0.6.4dev
+## 0.6.5dev
+
+## 0.6.4 (2023-03-12)
+
+* [Fix] Adds support for SQL Alchemy 2.0
+* [Doc] Summary section on jupysql vs ipython-sql
 
 ## 0.6.3 (2023-03-06)
 
