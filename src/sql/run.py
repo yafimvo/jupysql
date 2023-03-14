@@ -421,7 +421,7 @@ def run(conn, sql, config, user_namespace):
         return "Connected: %s" % conn.name
 
 
-def run_raw(conn, sql, config):
+def raw_run(conn, sql, config):
     result = conn.session.execute(sql)
     resultset = ResultSet(result, config)
     return resultset

@@ -106,7 +106,7 @@ class TableDescription(DatabaseInspection):
         if schema:
             table_name = f"{schema}.{table_name}"
 
-        columns = sql.run.run_raw(
+        columns = sql.run.raw_run(
             Connection.current, f"SELECT * FROM {table_name} WHERE 1=0", config
         ).keys
 
@@ -118,7 +118,7 @@ class TableDescription(DatabaseInspection):
 
             # Note: index is reserved word in sqlite
             try:
-                result_col_freq_values = sql.run.run_raw(
+                result_col_freq_values = sql.run.raw_run(
                     Connection.current,
                     f"""SELECT DISTINCT {column} as top,
                     COUNT({column}) as frequency FROM {table_name}
@@ -136,7 +136,7 @@ class TableDescription(DatabaseInspection):
 
             try:
                 # get all non None values, min, max and avg.
-                result_value_values = sql.run.run_raw(
+                result_value_values = sql.run.raw_run(
                     Connection.current,
                     f"""
                     SELECT MIN({column}) AS min,
@@ -160,7 +160,7 @@ class TableDescription(DatabaseInspection):
                 pass
 
             try:
-                results_avg = sql.run.run_raw(
+                results_avg = sql.run.raw_run(
                     Connection.current,
                     f"""
                                 SELECT AVG({column}) AS avg
@@ -180,7 +180,7 @@ class TableDescription(DatabaseInspection):
 
             try:
                 # Note: stddev_pop and PERCENTILE_DISC will work only on DuckDB
-                result = sql.run.run_raw(
+                result = sql.run.raw_run(
                     Connection.current,
                     f"""
                     SELECT
