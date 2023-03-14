@@ -1,4 +1,4 @@
-from .aes import aes
+from sql.ggplot.aes import aes
 
 
 class ggplot:

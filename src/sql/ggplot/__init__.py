@@ -1,6 +1,6 @@
-from .ggplot import ggplot
-from .aes import aes
-from .geom import geom_boxplot, geom_histogram
+from sql.ggplot.ggplot import ggplot
+from sql.ggplot.aes import aes
+from sql.ggplot.geom import geom_boxplot, geom_histogram
 
 __version__ = "0.6.4dev"
 

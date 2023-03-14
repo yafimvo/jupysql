@@ -1,5 +1,5 @@
-from .geom_boxplot import geom_boxplot
-from .geom_histogram import geom_histogram
+from sql.ggplot.geom.geom_boxplot import geom_boxplot
+from sql.ggplot.geom.geom_histogram import geom_histogram
 
 __version__ = "0.6.4dev"
 

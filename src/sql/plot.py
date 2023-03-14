@@ -7,14 +7,15 @@ from jinja2 import Template
 
 try:
     import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
 except ModuleNotFoundError:
     plt = None
+    Normalize = None
 
 try:
     import numpy as np
 except ModuleNotFoundError:
     np = None
-
 
 from sql.store import store
 import sql.connection
@@ -287,8 +288,18 @@ FROM "{{table}}"
 
 @requires(["matplotlib"])
 @telemetry.log_call("histogram", payload=True)
-def histogram(payload, table, column, bins, with_=None, conn=None,
-              color=None, edgecolor=None):
+def histogram(
+    payload,
+    table,
+    column,
+    bins,
+    with_=None,
+    conn=None,
+    category=None,
+    cmap=None,
+    color=None,
+    edgecolor=None,
+):
     """Plot histogram
 
     Parameters
@@ -328,12 +339,54 @@ def histogram(payload, table, column, bins, with_=None, conn=None,
     """
     ax = plt.gca()
     payload["connection_info"] = sql.connection.Connection._get_curr_connection_info()
-    if isinstance(column, str):
+    if category:
+        if isinstance(column, list):
+            if len(column) > 1:
+                raise ValueError(
+                    f"""Columns given : {column}.
+                    When using a stacked histogram,
+                    please ensure that you specify only one column."""
+                )
+            else:
+                column = " ".join(column)
+
+        if column is None or len(column) == 0:
+            raise ValueError("Column name has not been specified")
+
         bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
-        ax.bar(bin_, height, align="center", width=bin_[-1] - bin_[-2],
-               color=color,
-               edgecolor=edgecolor
-               )
+        categorical_histogram_df = _categorical_histogram(table, column, category,
+                                                          bins, with_=with_, conn=conn)
+        cmap = plt.get_cmap(cmap or "viridis")
+        norm = Normalize(vmin=0, vmax=len(categorical_histogram_df.index))
+
+        bottom = np.zeros(len(bin_))
+        for i in range(len(categorical_histogram_df.index)):
+            value = list(categorical_histogram_df.iloc[i])
+            color_ = cmap(norm(i + 1))
+            ax.bar(
+                bin_,
+                value,
+                align="center",
+                label=categorical_histogram_df.iloc[i].name,
+                width=bin_[-1] - bin_[-2],
+                bottom=bottom,
+                edgecolor=edgecolor or "None",
+                color=color or color_,
+            )
+            bottom += value
+
+        ax.set_title(f"Histogram from {table!r}")
+        ax.legend()
+    elif isinstance(column, str):
+        bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
+        ax.bar(
+            bin_,
+            height,
+            align="center",
+            width=bin_[-1] - bin_[-2],
+            color=color,
+            edgecolor=edgecolor or "None",
+        )
         ax.set_title(f"{column!r} from {table!r}")
         ax.set_xlabel(column)
     else:
@@ -347,7 +400,7 @@ def histogram(payload, table, column, bins, with_=None, conn=None,
                 alpha=0.5,
                 label=col,
                 color=color,
-                edgecolor=edgecolor
+                edgecolor=edgecolor or "None",
             )
             ax.set_title(f"Histogram from {table!r}")
             ax.legend()
@@ -390,3 +443,39 @@ order by 1;
         raise ValueError("Data contains NULLs")
 
     return bin_, height
+
+
+@modify_exceptions
+def _categorical_histogram(table, column, category, bins, with_=None, conn=None):
+    """Compute bins and heights"""
+    if not conn:
+        conn = sql.connection.Connection.current.session
+
+    # FIXME: we're computing all the with elements twice
+    min_, max_ = _min_max(conn, table, column, with_=with_)
+    range_ = max_ - min_
+    bin_size = range_ / bins
+
+    template = Template(
+        """
+select
+  floor("{{column}}"/{{bin_size}})*{{bin_size}},
+  {{category}}
+from "{{table}}"
+"""
+    )
+    query = template.render(table=table, column=column,
+                            bin_size=bin_size, category=category)
+
+    if with_:
+        query = str(store.render(query, with_=with_))
+
+    # TODO: We can use the duckdb pivot feature which will be release
+    # in 0.8 and remove dataframe usage
+    # https://github.com/duckdb/duckdb/pull/6387
+    import pandas as pd
+
+    df = pd.read_sql(query, conn)
+    data = df.value_counts().unstack(fill_value=None)
+    data = data.transpose()
+    return data

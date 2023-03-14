@@ -80,12 +80,34 @@ WHERE trip_distance < 6.3
 
 ## Example : Custom Style
 
-By modifying the `color` and `edgecolor` attributes, we can apply our custom style
+By modifying the `fill` and `color` attributes, we can apply our custom style
 
 ```{code-cell} ipython3
 (
     ggplot(table="short-trips", with_="short-trips")
     + aes(x="trip_distance") # noqa
-    + geom_histogram(bins=10, color="#69f0ae", edgecolor="#fff") # noqa
+    + geom_histogram(bins=10, fill="#69f0ae", color="#fff") # noqa
+)
+```
+
+## Example : Categorical histogram
+
+If we map the `fill` aesthetic to a different variable such as `payment_type`, the bars will stack automatically. Each colored rectangle on the stacked bars will represent a unique combination of `trip_distance` and `payment_type`.
+
+```{code-cell} ipython3
+(
+    ggplot(table="short-trips", with_="short-trips")
+    + aes(x="trip_distance", fill="payment_type") # noqa
+    + geom_histogram(bins=10) # noqa
+)
+```
+
+We can apply a different coloring using `cmap`
+
+```{code-cell} ipython3
+(
+    ggplot(table="short-trips", with_="short-trips")
+    + aes(x="trip_distance", fill="payment_type", cmap='plasma') # noqa
+    + geom_histogram(bins=10) # noqa
 )
 ```
