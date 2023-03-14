@@ -228,7 +228,7 @@ def test_example_histogram_stacked_with_large_bins(ip, diamonds_data):
     (
         ggplot(table=diamonds_data)
         + aes(x="price", fill="cut")
-        + geom_histogram(bins=500)
+        + geom_histogram(bins=400)
     )
 
 
