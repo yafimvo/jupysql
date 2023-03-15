@@ -110,7 +110,7 @@ from urllib.request import urlretrieve
 
 if not Path("diamonds.csv").is_file():
     urlretrieve(
-        "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv",
+        "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv", # noqa
         "diamonds.csv",
     )
 ```
