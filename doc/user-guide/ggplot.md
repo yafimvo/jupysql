@@ -30,10 +30,10 @@ The `ggplot` API is structured around the principles of the grammar of graphics,
 from pathlib import Path
 from urllib.request import urlretrieve
 
-url = 'https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet'
+url = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2021-01.parquet"
 
-if not Path('yellow_tripdata_2021-01.parquet').is_file():
-    urlretrieve(url, 'yellow_tripdata_2021-01.parquet')
+if not Path("yellow_tripdata_2021-01.parquet").is_file():
+    urlretrieve(url, "yellow_tripdata_2021-01.parquet")
 ```
 
 ## Setup
@@ -46,6 +46,7 @@ if not Path('yellow_tripdata_2021-01.parquet').is_file():
 ```
 
 ## Import
+
 ```{code-cell} ipython3
 from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
 ```
@@ -54,9 +55,9 @@ from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
 
 ```{code-cell} ipython3
 (
-    ggplot(table='yellow_tripdata_2021-01.parquet')
-    + aes(x='trip_distance') # noqa
-    + geom_boxplot() # noqa
+    ggplot(table="yellow_tripdata_2021-01.parquet")
+    + aes(x="trip_distance")
+    + geom_boxplot()
 )
 ```
 
@@ -72,9 +73,9 @@ WHERE trip_distance < 6.3
 
 ```{code-cell} ipython3
 (
-    ggplot(table='short-trips', with_='short-trips')
-    + aes(x='trip_distance') # noqa
-    + geom_histogram(bins=10) # noqa
+    ggplot(table="short-trips", with_="short-trips")
+    + aes(x="trip_distance")
+    + geom_histogram(bins=10)
 )
 ```
 
@@ -84,9 +85,9 @@ By modifying the `fill` and `color` attributes, we can apply our custom style
 
 ```{code-cell} ipython3
 (
-    ggplot(table='short-trips', with_='short-trips')
-    + aes(x='trip_distance') # noqa
-    + geom_histogram(bins=10, fill='#69f0ae', color='#fff') # noqa
+    ggplot(table="short-trips", with_="short-trips")
+    + aes(x="trip_distance")
+    + geom_histogram(bins=10, fill="#69f0ae", color="#fff")
 )
 ```
 
@@ -94,9 +95,9 @@ When using multiple columns we can apply color on each column
 
 ```{code-cell} ipython3
 (
-    ggplot(table='short-trips', with_='short-trips')
-    + aes(x=['PULocationID', 'DOLocationID']) # noqa
-    + geom_histogram(bins=10, fill=['#d500f9', '#fb8c00'], color='white') # noqa
+    ggplot(table="short-trips", with_="short-trips")
+    + aes(x=["PULocationID", "DOLocationID"])
+    + geom_histogram(bins=10, fill=["#d500f9", "#fb8c00"], color="white")
 )
 ```
 
@@ -124,50 +125,37 @@ Now, let's create a histogram of the different cuts of the diamonds by setting `
 Please note, since the values of `cut` are strings, we don't need the `bins` attribute here.
 
 ```{code-cell} ipython3
-(
-    ggplot(table='diamonds')
-    + aes(x='cut') # noqa
-    + geom_histogram() # noqa
-)
+(ggplot(table="diamonds") + aes(x="cut") + geom_histogram())
 ```
 
 We can show a histogram of multiple columns by setting `x=['cut', 'color']`
 
 ```{code-cell} ipython3
-(
-    ggplot(table='diamonds')
-    + aes(x=['cut', 'color']) # noqa
-    + geom_histogram() # noqa
-)
+(ggplot(table="diamonds") + aes(x=["cut", "color"]) + geom_histogram())
 ```
 
 Apply a custom color with `color` and `fill`
 
 ```{code-cell} ipython3
 (
-    ggplot(table='diamonds')
-    + aes(x='price', fill='cut') # noqa
-    + geom_histogram(bins=10, fill='green', color='white') # noqa
+    ggplot(table="diamonds")
+    + aes(x="price", fill="cut")
+    + geom_histogram(bins=10, fill="green", color="white")
 )
 ```
 
 If we map the `fill` aesthetic to a different variable such as `payment_type`, the bars will stack automatically. Each colored rectangle on the stacked bars will represent a unique combination of `price` and `cut`.
 
 ```{code-cell} ipython3
-(
-    ggplot(table='diamonds')
-    + aes(x='price', fill='cut') # noqa
-    + geom_histogram(bins=10) # noqa
-)
+(ggplot(table="diamonds") + aes(x="price", fill="cut") + geom_histogram(bins=10))
 ```
 
 We can apply a different coloring using `cmap`
 
 ```{code-cell} ipython3
 (
-    ggplot(table='diamonds')
-    + aes(x='price', fill='cut', cmap='plasma') # noqa
-    + geom_histogram(bins=10) # noqa
+    ggplot(table="diamonds")
+    + aes(x="price", fill="cut", cmap="plasma")
+    + geom_histogram(bins=10)
 )
 ```
-

@@ -42,8 +42,7 @@ def diamonds_data(tmpdir):
 
     if not Path(file_path_str).is_file():
         urlretrieve(
-            "https://raw.githubusercontent.com/tidyverse/ggplot2/"
-            + "main/data-raw/diamonds.csv",
+            "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv",  # noqa breaks the check-for-broken-links
             file_path_str,
         )
 
