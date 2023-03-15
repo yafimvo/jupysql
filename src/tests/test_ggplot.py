@@ -43,7 +43,7 @@ def diamonds_data(tmpdir):
     if not Path(file_path_str).is_file():
         urlretrieve(
             "https://raw.githubusercontent.com/tidyverse/ggplot2/"
-            "main/data-raw/diamonds.csv",
+            + "main/data-raw/diamonds.csv",
             file_path_str,
         )
 
@@ -214,6 +214,25 @@ def test_example_histogram_stacked_custom_color_and_fill(ip, diamonds_data):
 
 @cleanup
 @image_comparison(
+    baseline_images=["histogram_stacked_custom_color_and_fill"], extensions=["png"], remove_text=True
+)
+def test_ggplot_geom_histogram_fill_with_multi_color_warning(ip, diamonds_data):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    with pytest.warns(UserWarning):
+        (
+            ggplot(table=diamonds_data)
+            + aes(x="price", cmap="plasma", fill="cut")
+            + geom_histogram(bins=10, color="white", fill=["red", "blue"])
+        )
+
+
+@cleanup
+@image_comparison(
     baseline_images=["histogram_stacked_large_bins"],
     extensions=["png"],
     remove_text=True,
@@ -229,6 +248,118 @@ def test_example_histogram_stacked_with_large_bins(ip, diamonds_data):
         ggplot(table=diamonds_data)
         + aes(x="price", fill="cut")
         + geom_histogram(bins=400)
+    )
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["histogram_categorical"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_histogram(ip, diamonds_data):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    (ggplot(table=diamonds_data) + aes(x=["cut"]) + geom_histogram())
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["histogram_categorical_combined"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_histogram_combined(ip, diamonds_data):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    (ggplot(table=diamonds_data) + aes(x=["color", "carat"]) + geom_histogram(bins=10))
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined(ip, diamonds_data):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    (ggplot(table=diamonds_data) + aes(x=["color", "carat"]) + geom_histogram(bins=20))
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined_custom_fill"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined_custom_fill(ip, diamonds_data):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    (
+        ggplot(table=diamonds_data)
+        + aes(x=["color", "carat"])
+        + geom_histogram(bins=20, fill="red")
+    )
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined_custom_multi_fill"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined_custom_multi_fill(
+    ip, diamonds_data
+):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    (
+        ggplot(table=diamonds_data)
+        + aes(x=["color", "carat"])
+        + geom_histogram(bins=20, fill=["red", "blue"])
+    )
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined_custom_multi_color"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined_custom_multi_color(
+    ip, diamonds_data
+):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    (
+        ggplot(table=diamonds_data)
+        + aes(x=["color", "carat"])
+        + geom_histogram(bins=20, color=["green", "magenta"])
     )
 
 
@@ -266,3 +397,16 @@ def test_example_histogram_stacked_input_error(
         (ggplot(table=diamonds_data) + aes(x=x, fill="cut") + geom_histogram(bins=500))
 
     assert expected_error_message in str(error.value)
+
+
+def test_histogram_no_bins_error(ip, diamonds_data):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    with pytest.raises(ValueError) as error:
+        (ggplot(table=diamonds_data) + aes(x=["price"]) + geom_histogram())
+
+    assert "Please specify a valid number of bins." in str(error.value)

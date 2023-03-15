@@ -1,26 +1,29 @@
 
 class aes():
+    """
+    Aesthetic mappings
+
+    Parameters
+    ----------
+    x: str | list
+        x aesthetic mapping
+
+    y: str | list
+        y aesthetic mapping
+
+    fill : str
+        Create a stacked graph which is a combination of
+        'x' and 'fill'
+
+    cmap : str, default 'viridis
+        Apply a color map to the stacked graph
+    """
+
     def __init__(self,
                  x=None,
                  y=None,
                  cmap=None,
                  fill=None):
-        """
-        Parameters
-        ----------
-        x: str | list
-            x aesthetic mapping
-
-        y: str | list
-            y aesthetic mapping
-
-        fill : str
-            Create a stacked graph which is a combination of
-            'x' and 'fill'
-
-        cmap : str, default 'viridis
-            Apply a color map to the stacked graph
-        """
         self.x = x
         self.y = y
         self.cmap = cmap

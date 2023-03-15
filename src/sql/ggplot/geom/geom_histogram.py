@@ -3,13 +3,16 @@ from .geom import geom
 
 
 class geom_histogram(geom):
-    def __init__(self, bins, **kwargs):
-        """
-        Parameters
-        ----------
-        bins: int
-            Number of bins
-        """
+    """
+    Histogram plot
+
+    Parameters
+    ----------
+    bins: int
+        Number of bins
+    """
+
+    def __init__(self, bins=None, **kwargs):
         self.bins = bins
 
         super().__init__(**kwargs)

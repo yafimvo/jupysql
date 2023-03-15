@@ -20,6 +20,7 @@ except ModuleNotFoundError:
 from sql.store import store
 import sql.connection
 from sql.telemetry import telemetry
+import warnings
 
 
 def _summary_stats(con, table, column, with_=None):
@@ -286,6 +287,27 @@ FROM "{{table}}"
     return min_, max_
 
 
+def _are_numeric_values(*values):
+    return all([isinstance(value, (int, float)) for value in values])
+
+
+def _get_bar_width(ax, bins):
+    """
+    Return a single bar width based on number of bins
+    If bins values are str, calculate value based on figure size.
+    """
+
+    if _are_numeric_values(bins[-1], bins[-2]):
+        width = bins[-1] - bins[-2]
+    else:
+        fig = plt.gcf()
+        bbox = ax.get_window_extent()
+        width_inch = bbox.width / fig.dpi
+        width = width_inch / len(bins)
+
+    return width
+
+
 @requires(["matplotlib"])
 @telemetry.log_call("histogram", payload=True)
 def histogram(
@@ -354,24 +376,38 @@ def histogram(
             raise ValueError("Column name has not been specified")
 
         bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
-        categorical_histogram_df = _categorical_histogram(table, column, category,
-                                                          bins, with_=with_, conn=conn)
+        width = _get_bar_width(ax, bin_)
+        categorical_histogram_df = _histogram_stacked(table, column, category,
+                                                      bins, with_=with_, conn=conn)
         cmap = plt.get_cmap(cmap or "viridis")
         norm = Normalize(vmin=0, vmax=len(categorical_histogram_df.index))
 
         bottom = np.zeros(len(bin_))
         for i in range(len(categorical_histogram_df.index)):
             value = list(categorical_histogram_df.iloc[i])
-            color_ = cmap(norm(i + 1))
+
+            if isinstance(color, list):
+                color_ = color[0]
+                if len(color) > 1:
+                    warnings.warn("If you want to colorize each bar with multiple colors"
+                                  "please use cmap attribute instead of 'fill'", UserWarning)
+            else:
+                color_ = color or cmap(norm(i + 1))
+
+            if isinstance(edgecolor, list):
+                edgecolor_ = edgecolor[0]
+            else:
+                edgecolor_ = edgecolor or "None"
+
             ax.bar(
                 bin_,
                 value,
                 align="center",
                 label=categorical_histogram_df.iloc[i].name,
-                width=bin_[-1] - bin_[-2],
+                width=width,
                 bottom=bottom,
-                edgecolor=edgecolor or "None",
-                color=color or color_,
+                edgecolor=edgecolor_,
+                color=color_,
             )
             bottom += value
 
@@ -379,28 +415,42 @@ def histogram(
         ax.legend()
     elif isinstance(column, str):
         bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
+        width = _get_bar_width(ax, bin_)
+
         ax.bar(
             bin_,
             height,
             align="center",
-            width=bin_[-1] - bin_[-2],
+            width=width,
             color=color,
             edgecolor=edgecolor or "None",
         )
         ax.set_title(f"{column!r} from {table!r}")
         ax.set_xlabel(column)
     else:
-        for col in column:
+        for i, col in enumerate(column):
             bin_, height = _histogram(table, col, bins, with_=with_, conn=conn)
+            width = _get_bar_width(ax, bin_)
+
+            if isinstance(color, list):
+                color_ = color[i]
+            else:
+                color_ = color
+
+            if isinstance(edgecolor, list):
+                edgecolor_ = edgecolor[i]
+            else:
+                edgecolor_ = edgecolor or "None"
+
             ax.bar(
                 bin_,
                 height,
                 align="center",
-                width=bin_[-1] - bin_[-2],
+                width=width,
                 alpha=0.5,
                 label=col,
-                color=color,
-                edgecolor=edgecolor or "None",
+                color=color_,
+                edgecolor=edgecolor_,
             )
             ax.set_title(f"Histogram from {table!r}")
             ax.legend()
@@ -418,20 +468,38 @@ def _histogram(table, column, bins, with_=None, conn=None):
 
     # FIXME: we're computing all the with elements twice
     min_, max_ = _min_max(conn, table, column, with_=with_)
-    range_ = max_ - min_
-    bin_size = range_ / bins
 
-    template = Template(
+    if _are_numeric_values(min_, max_):
+
+        if not isinstance(bins, int):
+            raise ValueError(
+                f"bins are '{bins}'. Please specify a valid number of bins.")
+
+        range_ = max_ - min_
+        bin_size = range_ / bins
+
+        template = Template(
+            """
+            select
+            floor("{{column}}"/{{bin_size}})*{{bin_size}},
+            count(*) as count
+            from "{{table}}"
+            group by 1
+            order by 1;
+            """
+        )
+        query = template.render(table=table, column=column, bin_size=bin_size)
+    else:
+        template = Template(
+            """
+        select
+            "{{column}}", count ({{column}})
+        from "{{table}}"
+        group by 1
+        order by 1;
         """
-select
-  floor("{{column}}"/{{bin_size}})*{{bin_size}},
-  count(*) as count
-from "{{table}}"
-group by 1
-order by 1;
-"""
-    )
-    query = template.render(table=table, column=column, bin_size=bin_size)
+        )
+        query = template.render(table=table, column=column)
 
     if with_:
         query = str(store.render(query, with_=with_))
@@ -446,8 +514,9 @@ order by 1;
 
 
 @modify_exceptions
-def _categorical_histogram(table, column, category, bins, with_=None, conn=None):
-    """Compute bins and heights"""
+def _histogram_stacked(table, column, category, bins, with_=None, conn=None):
+    """Compute bin size for the column and the corresponding
+    heights of each category value"""
     if not conn:
         conn = sql.connection.Connection.current.session
 
@@ -470,8 +539,8 @@ from "{{table}}"
     if with_:
         query = str(store.render(query, with_=with_))
 
-    # TODO: We can use the duckdb pivot feature which will be release
-    # in 0.8 and remove dataframe usage
+    # TODO: We can use the duckdb pivot feature which will be released
+    # in 0.8 so we won't have to use dataframe
     # https://github.com/duckdb/duckdb/pull/6387
     import pandas as pd
 
