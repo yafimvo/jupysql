@@ -389,8 +389,9 @@ def histogram(
             if isinstance(color, list):
                 color_ = color[0]
                 if len(color) > 1:
-                    warnings.warn("If you want to colorize each bar with multiple colors"
-                                  "please use cmap attribute instead of 'fill'", UserWarning)
+                    warnings.warn("If you want to colorize each bar with multiple "
+                                  "colors please use cmap attribute instead "
+                                  "of 'fill'", UserWarning)
             else:
                 color_ = color or cmap(norm(i + 1))
 

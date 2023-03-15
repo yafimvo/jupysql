@@ -214,7 +214,9 @@ def test_example_histogram_stacked_custom_color_and_fill(ip, diamonds_data):
 
 @cleanup
 @image_comparison(
-    baseline_images=["histogram_stacked_custom_color_and_fill"], extensions=["png"], remove_text=True
+    baseline_images=["histogram_stacked_custom_color_and_fill"],
+    extensions=["png"],
+    remove_text=True
 )
 def test_ggplot_geom_histogram_fill_with_multi_color_warning(ip, diamonds_data):
     ip.run_cell(
