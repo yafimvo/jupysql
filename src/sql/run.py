@@ -18,6 +18,7 @@ except ImportError:
     PGSpecial = None
 
 from sql.telemetry import telemetry
+import logging
 
 
 def unduplicate_field_names(field_names):
@@ -372,24 +373,29 @@ _COMMIT_BLACKLIST_DIALECTS = (
 )
 
 
-def _commit(conn, config):
+def _commit(conn, config, manual_commit):
     """Issues a commit, if appropriate for current config and dialect"""
 
-    _should_commit = config.autocommit and all(
-        dialect not in str(conn.dialect) for dialect in _COMMIT_BLACKLIST_DIALECTS
+    _should_commit = (
+        config.autocommit
+        and all(
+            dialect not in str(conn.dialect) for dialect in _COMMIT_BLACKLIST_DIALECTS
+        )
+        and manual_commit
     )
 
     if _should_commit:
         try:
             conn.session.execute("commit")
         except sqlalchemy.exc.OperationalError:
-            pass  # not all engines can commit
+            print("The database does not support the COMMIT command")
 
 
-def run(conn, sql, config, user_namespace):
+def run(conn, sql, config):
     if sql.strip():
         for statement in sqlparse.split(sql):
             first_word = sql.strip().split()[0].lower()
+            manual_commit = False
             if first_word == "begin":
                 raise Exception("ipython_sql does not support transactions")
             if first_word.startswith("\\") and (
@@ -404,8 +410,20 @@ def run(conn, sql, config, user_namespace):
                 result = FakeResultProxy(cur, headers)
             else:
                 txt = sqlalchemy.sql.text(statement)
-                result = conn.session.execute(txt, user_namespace)
-            _commit(conn=conn, config=config)
+                if config.autocommit:
+                    try:
+                        conn.session.execution_options(isolation_level="AUTOCOMMIT")
+                    except Exception as e:
+                        logging.debug(
+                            f"The database driver doesn't support such "
+                            f"AUTOCOMMIT execution option"
+                            f"\nPerhaps you can try running a manual COMMIT command"
+                            f"\nMessage from the database driver\n\t"
+                            f"Exception:  {e}\n",  # noqa: F841
+                        )
+                        manual_commit = True
+                result = conn.session.execute(txt)
+            _commit(conn=conn, config=config, manual_commit=manual_commit)
             if result and config.feedback:
                 print(interpret_rowcount(result.rowcount))
 
