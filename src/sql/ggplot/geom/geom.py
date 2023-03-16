@@ -1,4 +1,4 @@
-class geom():
+class geom:
     """
     Base class of all geom
 
@@ -14,3 +14,7 @@ class geom():
     def __init__(self, fill=None, color=None):
         self.fill = fill
         self.color = color
+
+    # make abstract
+    def draw():
+        pass

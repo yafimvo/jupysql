@@ -1,4 +1,4 @@
-from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
+from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram, facet_wrap
 from matplotlib.testing.decorators import image_comparison, cleanup
 import pytest
 from pathlib import Path
@@ -411,3 +411,33 @@ def test_histogram_no_bins_error(ip, diamonds_data):
         (ggplot(table=diamonds_data) + aes(x=["price"]) + geom_histogram())
 
     assert "Please specify a valid number of bins." in str(error.value)
+
+
+# test test test
+@cleanup
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined_custom_multi_color"],
+    #  "histogram_with_default"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_facet_wrap(
+    ip, diamonds_data, capsys
+):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
+    (
+        ggplot(diamonds_data, aes(x=["color", "carat"]))
+        # + facet_wrap('~cut')
+        +
+        geom_histogram(bins=20, color=["green", "magenta"])
+
+    )
+
+    with capsys.disabled():
+        o, e = capsys.readouterr()
+        print(o)

@@ -321,6 +321,7 @@ def histogram(
     cmap=None,
     color=None,
     edgecolor=None,
+    ax=None
 ):
     """Plot histogram
 
@@ -359,7 +360,7 @@ def histogram(
 
     .. plot:: ../examples/plot_histogram_many.py
     """
-    ax = plt.gca()
+    ax = ax or plt.gca()
     payload["connection_info"] = sql.connection.Connection._get_curr_connection_info()
     if category:
         if isinstance(column, list):
