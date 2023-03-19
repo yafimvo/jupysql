@@ -102,13 +102,13 @@ class TableDescription(DatabaseInspection):
 
     """
 
-    def __init__(self, table_name, schema=None, config=None) -> None:
+    def __init__(self, table_name, schema=None) -> None:
         if schema:
             table_name = f"{schema}.{table_name}"
 
         columns = sql.run.raw_run(
-            Connection.current, f"SELECT * FROM {table_name} WHERE 1=0", config
-        ).keys
+            Connection.current, f"SELECT * FROM {table_name} WHERE 1=0"
+        ).keys()
 
         table_stats = dict({})
         columns_to_include_in_report = set()
@@ -122,12 +122,11 @@ class TableDescription(DatabaseInspection):
                     Connection.current,
                     f"""SELECT DISTINCT {column} as top,
                     COUNT({column}) as frequency FROM {table_name}
-                    GROUP BY {column} ORDER BY Count({column}) Desc""",
-                    config,
-                ).dict()
+                    GROUP BY {column} ORDER BY Count({column}) Desc"""
+                ).fetchall()
 
-                table_stats[column]["freq"] = result_col_freq_values["frequency"][0]
-                table_stats[column]["top"] = result_col_freq_values["top"][0]
+                table_stats[column]["freq"] = result_col_freq_values[0][1]
+                table_stats[column]["top"] = result_col_freq_values[0][0]
 
                 columns_to_include_in_report.update(["freq", "top"])
 
@@ -145,14 +144,13 @@ class TableDescription(DatabaseInspection):
                     COUNT({column}) AS count
                     FROM {table_name}
                     WHERE {column} IS NOT NULL
-                    """,
-                    config,
-                ).dict()
+                    """
+                ).fetchall()
 
-                table_stats[column]["count"] = result_value_values["count"][0]
-                table_stats[column]["unique"] = result_value_values["unique_count"][0]
-                table_stats[column]["min"] = result_value_values["min"][0]
-                table_stats[column]["max"] = result_value_values["max"][0]
+                table_stats[column]["min"] = result_value_values[0][0]
+                table_stats[column]["max"] = result_value_values[0][1]
+                table_stats[column]["unique"] = result_value_values[0][2]
+                table_stats[column]["count"] = result_value_values[0][3]
 
                 columns_to_include_in_report.update(["count", "unique", "min", "max"])
 
@@ -166,10 +164,10 @@ class TableDescription(DatabaseInspection):
                                 SELECT AVG({column}) AS avg
                                 FROM {table_name}
                                 WHERE {column} IS NOT NULL
-                                """,
-                    config,
-                ).dict()
-                table_stats[column]["mean"] = float(results_avg["avg"][0])
+                                """
+                ).fetchall()
+
+                table_stats[column]["mean"] = float(results_avg[0][0])
                 columns_to_include_in_report.update(["mean"])
 
             except Exception:
@@ -192,13 +190,12 @@ class TableDescription(DatabaseInspection):
                         percentile_disc(0.75) WITHIN GROUP
                         (ORDER BY {column}) as key_75
                     FROM {table_name}
-                    """,
-                    config,
-                ).dict()
+                    """
+                ).fetchall()
 
-                for key in special_numeric_keys:
-                    r_key = f'key_{key.replace("%", "")}'
-                    table_stats[column][key] = float(result[r_key][0])
+                for i, key in enumerate(special_numeric_keys):
+                    # r_key = f'key_{key.replace("%", "")}'
+                    table_stats[column][key] = float(result[0][i])
 
                 columns_to_include_in_report.update(special_numeric_keys)
 
@@ -252,11 +249,11 @@ def get_columns(name, schema=None):
 
 
 @telemetry.log_call()
-def get_table_statistics(name, schema=None, config=None):
+def get_table_statistics(name, schema=None):
     """Get table statistics for a given connection.
 
     For all data types the results will include `count`, `mean`, `std`, `min`
     `max`, `25`, `50` and `75` percentiles. It will also include `unique`, `top`
     and `freq` statistics.
     """
-    return TableDescription(name, schema=schema, config=config)
+    return TableDescription(name, schema=schema)

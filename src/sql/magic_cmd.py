@@ -84,7 +84,7 @@ class SqlCmdMagic(Magics, Configurable):
             args = parser.parse_args(others)
 
             report = inspect.get_table_statistics(
-                schema=args.schema, name=args.table, config=self.config
+                schema=args.schema, name=args.table
             )
 
             if args.output:

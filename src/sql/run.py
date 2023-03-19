@@ -439,10 +439,8 @@ def run(conn, sql, config):
         return "Connected: %s" % conn.name
 
 
-def raw_run(conn, sql, config):
-    result = conn.session.execute(sql)
-    resultset = ResultSet(result, config)
-    return resultset
+def raw_run(conn, sql):
+    return conn.session.execute(sql)
 
 
 class PrettyTable(prettytable.PrettyTable):
