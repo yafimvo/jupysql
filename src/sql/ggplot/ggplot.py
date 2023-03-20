@@ -22,7 +22,7 @@ class ggplot:
     Create a new ggplot
     """
     figure: mpl.figure.Figure
-    axs: list[mpl.axes.Axes]
+    axs: list
 
     def __init__(self, table, aes: aes = None, conn=None, with_=None) -> None:
         self.table = table
