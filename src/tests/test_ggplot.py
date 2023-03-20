@@ -305,43 +305,6 @@ def test_categorical_and_numeric_histogram_combined_custom_multi_color(diamonds_
     )
 
 
-@pytest.mark.parametrize(
-    "x, expected_error, expected_error_message",
-    [
-        ([], ValueError, "Column name has not been specified"),
-        ([""], ValueError, "Column name has not been specified"),
-        (None, ValueError, "Column name has not been specified"),
-        ("", ValueError, "Column name has not been specified"),
-        ([None, None], ValueError, "please ensure that you specify only one column"),
-        (
-            ["price", "table"],
-            ValueError,
-            "please ensure that you specify only one column",
-        ),
-        (
-            ["price", "table", "color"],
-            ValueError,
-            "please ensure that you specify only one column",
-        ),
-        ([None], TypeError, "expected str instance, NoneType found"),
-    ],
-)
-def test_example_histogram_stacked_input_error(
-    diamonds_data, x, expected_error, expected_error_message
-):
-    with pytest.raises(expected_error) as error:
-        (ggplot(diamonds_data, aes(x=x, fill="cut")) + geom_histogram(bins=500))
-
-    assert expected_error_message in str(error.value)
-
-
-def test_histogram_no_bins_error(diamonds_data):
-    with pytest.raises(ValueError) as error:
-        (ggplot(diamonds_data, aes(x=["price"])) + geom_histogram())
-
-    assert "Please specify a valid number of bins." in str(error.value)
-
-
 @cleanup
 @image_comparison(
     baseline_images=["facet_wrap_default"],
@@ -424,3 +387,40 @@ def test_facet_wrap_stacked_histogram_cmap(diamonds_data):
         + geom_histogram(bins=10)
         + facet_wrap("cut")
     )
+
+
+@pytest.mark.parametrize(
+    "x, expected_error, expected_error_message",
+    [
+        ([], ValueError, "Column name has not been specified"),
+        ([""], ValueError, "Column name has not been specified"),
+        (None, ValueError, "Column name has not been specified"),
+        ("", ValueError, "Column name has not been specified"),
+        ([None, None], ValueError, "please ensure that you specify only one column"),
+        (
+            ["price", "table"],
+            ValueError,
+            "please ensure that you specify only one column",
+        ),
+        (
+            ["price", "table", "color"],
+            ValueError,
+            "please ensure that you specify only one column",
+        ),
+        ([None], TypeError, "expected str instance, NoneType found"),
+    ],
+)
+def test_example_histogram_stacked_input_error(
+    diamonds_data, x, expected_error, expected_error_message
+):
+    with pytest.raises(expected_error) as error:
+        (ggplot(diamonds_data, aes(x=x, fill="cut")) + geom_histogram(bins=500))
+
+    assert expected_error_message in str(error.value)
+
+
+def test_histogram_no_bins_error(diamonds_data):
+    with pytest.raises(ValueError) as error:
+        (ggplot(diamonds_data, aes(x=["price"])) + geom_histogram())
+
+    assert "Please specify a valid number of bins." in str(error.value)
