@@ -1,9 +1,9 @@
 # CHANGELOG
 
 ## 0.7.0dev
-
-* [API Change] Deprecates old SQL parametrization: `$var`, `:var`, and `{var}` in favor of `{{var}}`
 * [Feature] Adds `%sqlcmd profile` (#66)
+* [API Change] Deprecates old SQL parametrization: `$var`, `:var`, and `{var}` in favor of `{{var}}`
+* [Feature] Adds sql magic test to list of possible magics to test datasets
 
 ## 0.6.6 (2023-03-16)
 
