@@ -1,6 +1,38 @@
+from jinja2 import Template
+import math
+import sql.connection
+from sql.store import store
+
+
+def _run_query(query, with_=None, conn=None):
+
+    if not conn:
+        conn = sql.connection.Connection.current.session
+
+    if with_:
+        query = str(store.render(query, with_=with_))
+
+    return conn.execute(query).fetchall()
+
+
 class facet():
     def __init__():
         pass
+
+    def get_facet_values(self, table, column, with_):
+        template = Template(
+            """
+            SELECT
+            distinct ({{column}})
+            FROM "{{table}}"
+            """
+        )
+        query = template.render(table=table, column=column)
+        values = _run_query(query, with_=with_)
+        n_plots = len(values)
+        n_cols = len(values) if len(values) < 3 else 3
+        n_rows = math.ceil(n_plots / n_cols)
+        return values, n_rows, n_cols
 
 
 class facet_wrap(facet):
@@ -10,39 +42,12 @@ class facet_wrap(facet):
     Parameters
     ----------
     facet : str
-        Column to groupby and plot on different panels. 
+        Column to groupby and plot on different panels.
     """
 
-    def __init__(self, facet: str):
+    def __init__(self, facet: str, legend=True):
         self.facet = facet
-        pass
-
-    # def __radd__(self, gg):
-    #     # import matplotlib.pyplot as plt
-    #     import numpy as np
-
-    #     # print("face wrap... ", type(gg))
-
-    #     # # Some example data to display
-    #     # x = np.linspace(0, 2 * np.pi, 400)
-    #     # y = np.sin(x ** 2)
-    #     # fig, (ax1, ax2) = plt.subplots(1, 2)
-    #     # fig.suptitle('Horizontally stacked subplots')
-    #     # ax1.plot(x, y)
-    #     # ax2.plot(x, -y)
-
-    #     im = gg.plot.imshow(np.arange(100).reshape((10, 10)))
-
-    #     return gg
+        self.legend = legend
 
     def __add__(self, other):
-        print("adding face 1")
-        return self.__iadd__(other)
-
-    def __iadd__(self, other):
-        print("adding face 2")
-        return other.__radd__(self)
-
-    def __radd__(self, gg):
-        print("adding face 3", type(gg))
-        return gg.__add__(self)
+        return other.__add__(other)

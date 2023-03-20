@@ -196,7 +196,7 @@ def _boxplot_stats(con, table, column, whis=1.5, autorange=False, with_=None):
 # https://github.com/matplotlib/matplotlib/blob/ddc260ce5a53958839c244c0ef0565160aeec174/lib/matplotlib/axes/_axes.py#L3915
 @requires(["matplotlib"])
 @telemetry.log_call("boxplot", payload=True)
-def boxplot(payload, table, column, *, orient="v", with_=None, conn=None):
+def boxplot(payload, table, column, *, orient="v", with_=None, conn=None, ax=None):
     """Plot boxplot
 
     Parameters
@@ -321,7 +321,8 @@ def histogram(
     cmap=None,
     color=None,
     edgecolor=None,
-    ax=None
+    ax=None,
+    facet=None,
 ):
     """Plot histogram
 
@@ -378,8 +379,9 @@ def histogram(
 
         bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
         width = _get_bar_width(ax, bin_)
-        categorical_histogram_df = _histogram_stacked(table, column, category,
-                                                      bins, with_=with_, conn=conn)
+        categorical_histogram_df = _histogram_stacked(
+            table, column, category, bins, with_=with_, conn=conn, facet=facet
+        )
         cmap = plt.get_cmap(cmap or "viridis")
         norm = Normalize(vmin=0, vmax=len(categorical_histogram_df.index))
 
@@ -390,9 +392,12 @@ def histogram(
             if isinstance(color, list):
                 color_ = color[0]
                 if len(color) > 1:
-                    warnings.warn("If you want to colorize each bar with multiple "
-                                  "colors please use cmap attribute instead "
-                                  "of 'fill'", UserWarning)
+                    warnings.warn(
+                        "If you want to colorize each bar with multiple "
+                        "colors please use cmap attribute instead "
+                        "of 'fill'",
+                        UserWarning,
+                    )
             else:
                 color_ = color or cmap(norm(i + 1))
 
@@ -416,7 +421,9 @@ def histogram(
         ax.set_title(f"Histogram from {table!r}")
         ax.legend()
     elif isinstance(column, str):
-        bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
+        bin_, height = _histogram(
+            table, column, bins, with_=with_, conn=conn, facet=facet
+        )
         width = _get_bar_width(ax, bin_)
 
         ax.bar(
@@ -426,12 +433,16 @@ def histogram(
             width=width,
             color=color,
             edgecolor=edgecolor or "None",
+            label=column
         )
         ax.set_title(f"{column!r} from {table!r}")
         ax.set_xlabel(column)
+
     else:
         for i, col in enumerate(column):
-            bin_, height = _histogram(table, col, bins, with_=with_, conn=conn)
+            bin_, height = _histogram(
+                table, col, bins, with_=with_, conn=conn, facet=facet
+            )
             width = _get_bar_width(ax, bin_)
 
             if isinstance(color, list):
@@ -463,7 +474,7 @@ def histogram(
 
 
 @modify_exceptions
-def _histogram(table, column, bins, with_=None, conn=None):
+def _histogram(table, column, bins, with_=None, conn=None, facet=None):
     """Compute bins and heights"""
     if not conn:
         conn = sql.connection.Connection.current.session
@@ -471,11 +482,13 @@ def _histogram(table, column, bins, with_=None, conn=None):
     # FIXME: we're computing all the with elements twice
     min_, max_ = _min_max(conn, table, column, with_=with_)
 
-    if _are_numeric_values(min_, max_):
+    filter_query = f"WHERE {facet['key']} == '{facet['value']}'" if facet else ""
 
+    if _are_numeric_values(min_, max_):
         if not isinstance(bins, int):
             raise ValueError(
-                f"bins are '{bins}'. Please specify a valid number of bins.")
+                f"bins are '{bins}'. Please specify a valid number of bins."
+            )
 
         range_ = max_ - min_
         bin_size = range_ / bins
@@ -486,22 +499,26 @@ def _histogram(table, column, bins, with_=None, conn=None):
             floor("{{column}}"/{{bin_size}})*{{bin_size}},
             count(*) as count
             from "{{table}}"
+            {{filter_query}}
             group by 1
             order by 1;
             """
         )
-        query = template.render(table=table, column=column, bin_size=bin_size)
+        query = template.render(
+            table=table, column=column, bin_size=bin_size, filter_query=filter_query
+        )
     else:
         template = Template(
             """
         select
             "{{column}}", count ({{column}})
         from "{{table}}"
+        {{filter_query}}
         group by 1
         order by 1;
         """
         )
-        query = template.render(table=table, column=column)
+        query = template.render(table=table, column=column, filter_query=filter_query)
 
     if with_:
         query = str(store.render(query, with_=with_))
@@ -516,7 +533,9 @@ def _histogram(table, column, bins, with_=None, conn=None):
 
 
 @modify_exceptions
-def _histogram_stacked(table, column, category, bins, with_=None, conn=None):
+def _histogram_stacked(
+    table, column, category, bins, with_=None, conn=None, facet=None
+):
     """Compute bin size for the column and the corresponding
     heights of each category value"""
     if not conn:
@@ -527,16 +546,24 @@ def _histogram_stacked(table, column, category, bins, with_=None, conn=None):
     range_ = max_ - min_
     bin_size = range_ / bins
 
+    filter_query = f"WHERE {facet['key']} == '{facet['value']}'" if facet else ""
+
     template = Template(
         """
 select
   floor("{{column}}"/{{bin_size}})*{{bin_size}},
   {{category}}
 from "{{table}}"
+{{filter_query}}
 """
     )
-    query = template.render(table=table, column=column,
-                            bin_size=bin_size, category=category)
+    query = template.render(
+        table=table,
+        column=column,
+        bin_size=bin_size,
+        category=category,
+        filter_query=filter_query,
+    )
 
     if with_:
         query = str(store.render(query, with_=with_))

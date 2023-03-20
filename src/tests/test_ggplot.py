@@ -23,7 +23,13 @@ def short_trips_data(ip, yellow_trip_data):
 
 
 @pytest.fixture
-def yellow_trip_data(tmpdir):
+def yellow_trip_data(ip, tmpdir):
+    ip.run_cell(
+        """
+    %sql duckdb://
+    """
+    )
+
     file_path_str = str(tmpdir.join("yellow_tripdata_2021-01.parquet"))
 
     if not Path(file_path_str).is_file():
@@ -37,7 +43,13 @@ def yellow_trip_data(tmpdir):
 
 
 @pytest.fixture
-def diamonds_data(tmpdir):
+def diamonds_data(ip, tmpdir):
+    ip.run_cell(
+        """
+        %sql duckdb://
+        """
+    )
+
     file_path_str = str(tmpdir.join("diamonds.csv"))
 
     if not Path(file_path_str).is_file():
@@ -49,15 +61,42 @@ def diamonds_data(tmpdir):
     yield file_path_str
 
 
-@cleanup
-@image_comparison(baseline_images=["boxplot"], extensions=["png"], remove_text=True)
-def test_ggplot_geom_boxplot(ip, yellow_trip_data):
+@pytest.fixture
+def penguins_data(tmpdir):
+    file_path_str = str(tmpdir.join("penguins.csv"))
+
+    if not Path(file_path_str).is_file():
+        urlretrieve(
+            "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",  # noqa breaks the check-for-broken-links
+            file_path_str,
+        )
+
+    yield file_path_str
+
+
+@pytest.fixture
+def penguins_no_nulls(ip, penguins_data):
     ip.run_cell(
         """
-    %sql duckdb://
-    """
+        %sql duckdb://
+        """
     )
-    (ggplot(table=yellow_trip_data) + aes(x="trip_distance") + geom_boxplot())
+
+    ip.run_cell(
+        f"""
+%%sql --save no-nulls --no-execute
+SELECT *
+FROM "{penguins_data}"
+WHERE body_mass_g IS NOT NULL and
+sex IS NOT NULL
+    """
+    ).result
+
+
+@cleanup
+@image_comparison(baseline_images=["boxplot"], extensions=["png"], remove_text=True)
+def test_ggplot_geom_boxplot(yellow_trip_data):
+    (ggplot(yellow_trip_data, aes(x="trip_distance")) + geom_boxplot())
 
 
 @cleanup
@@ -65,15 +104,8 @@ def test_ggplot_geom_boxplot(ip, yellow_trip_data):
     baseline_images=["histogram_default"], extensions=["png"], remove_text=True
 )
 def test_ggplot_geom_histogram(ip, yellow_trip_data):
-    ip.run_cell(
-        """
-    %sql duckdb://
-    """
-    )
-
     (
-        ggplot(table=yellow_trip_data)
-        + aes(x="trip_distance")
+        ggplot(yellow_trip_data, aes(x="trip_distance"))
         + geom_histogram(bins=10, color="white")
     )
 
@@ -84,8 +116,7 @@ def test_ggplot_geom_histogram(ip, yellow_trip_data):
 )
 def test_ggplot_geom_histogram_with(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips")
-        + aes(x="trip_distance")
+        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10)
     )
 
@@ -96,8 +127,7 @@ def test_ggplot_geom_histogram_with(short_trips_data):
 )
 def test_ggplot_geom_histogram_edge_color(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips")
-        + aes(x="trip_distance")
+        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10, color="white")
     )
 
@@ -108,8 +138,7 @@ def test_ggplot_geom_histogram_edge_color(short_trips_data):
 )
 def test_ggplot_geom_histogram_fill(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips")
-        + aes(x="trip_distance")
+        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10, fill="red")
     )
 
@@ -122,8 +151,7 @@ def test_ggplot_geom_histogram_fill(short_trips_data):
 )
 def test_ggplot_geom_histogram_fill_and_color(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips")
-        + aes(x="trip_distance")
+        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10, fill="red", color="#fff")
     )
 
@@ -141,14 +169,8 @@ def test_ggplot_geom_histogram_fill_and_color(short_trips_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_example_histogram_stacked_default(ip, diamonds_data, x):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
-    (ggplot(table=diamonds_data) + aes(x=x, fill="cut") + geom_histogram(bins=10))
+def test_example_histogram_stacked_default(diamonds_data, x):
+    (ggplot(diamonds_data, aes(x=x, fill="cut")) + geom_histogram(bins=10))
 
 
 @cleanup
@@ -157,16 +179,9 @@ def test_example_histogram_stacked_default(ip, diamonds_data, x):
     extensions=["png"],
     remove_text=True,
 )
-def test_example_histogram_stacked_custom_cmap(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_example_histogram_stacked_custom_cmap(diamonds_data):
     (
-        ggplot(table=diamonds_data)
-        + aes(x="price", fill="cut", cmap="plasma")
+        ggplot(diamonds_data, aes(x="price", fill="cut", cmap="plasma"))
         + geom_histogram(bins=10)
     )
 
@@ -177,16 +192,9 @@ def test_example_histogram_stacked_custom_cmap(ip, diamonds_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_example_histogram_stacked_custom_color(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_example_histogram_stacked_custom_color(diamonds_data):
     (
-        ggplot(table=diamonds_data)
-        + aes(x="price", cmap="plasma", fill="cut")
+        ggplot(diamonds_data, aes(x="price", cmap="plasma", fill="cut"))
         + geom_histogram(bins=10, color="k")
     )
 
@@ -197,16 +205,9 @@ def test_example_histogram_stacked_custom_color(ip, diamonds_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_example_histogram_stacked_custom_color_and_fill(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_example_histogram_stacked_custom_color_and_fill(diamonds_data):
     (
-        ggplot(table=diamonds_data)
-        + aes(x="price", cmap="plasma", fill="cut")
+        ggplot(diamonds_data, aes(x="price", cmap="plasma", fill="cut"))
         + geom_histogram(bins=10, color="white", fill="red")
     )
 
@@ -215,19 +216,12 @@ def test_example_histogram_stacked_custom_color_and_fill(ip, diamonds_data):
 @image_comparison(
     baseline_images=["histogram_stacked_custom_color_and_fill"],
     extensions=["png"],
-    remove_text=True
+    remove_text=True,
 )
-def test_ggplot_geom_histogram_fill_with_multi_color_warning(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_ggplot_geom_histogram_fill_with_multi_color_warning(diamonds_data):
     with pytest.warns(UserWarning):
         (
-            ggplot(table=diamonds_data)
-            + aes(x="price", cmap="plasma", fill="cut")
+            ggplot(diamonds_data, aes(x="price", cmap="plasma", fill="cut"))
             + geom_histogram(bins=10, color="white", fill=["red", "blue"])
         )
 
@@ -238,18 +232,8 @@ def test_ggplot_geom_histogram_fill_with_multi_color_warning(ip, diamonds_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_example_histogram_stacked_with_large_bins(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
-    (
-        ggplot(table=diamonds_data)
-        + aes(x="price", fill="cut")
-        + geom_histogram(bins=400)
-    )
+def test_example_histogram_stacked_with_large_bins(diamonds_data):
+    (ggplot(diamonds_data, aes(x="price", fill="cut")) + geom_histogram(bins=400))
 
 
 @cleanup
@@ -258,14 +242,8 @@ def test_example_histogram_stacked_with_large_bins(ip, diamonds_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_categorical_histogram(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
-    (ggplot(table=diamonds_data) + aes(x=["cut"]) + geom_histogram())
+def test_categorical_histogram(diamonds_data):
+    (ggplot(diamonds_data, aes(x=["cut"])) + geom_histogram())
 
 
 @cleanup
@@ -274,14 +252,8 @@ def test_categorical_histogram(ip, diamonds_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_categorical_histogram_combined(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
-    (ggplot(table=diamonds_data) + aes(x=["color", "carat"]) + geom_histogram(bins=10))
+def test_categorical_histogram_combined(diamonds_data):
+    (ggplot(diamonds_data, aes(x=["color", "carat"])) + geom_histogram(bins=10))
 
 
 @cleanup
@@ -290,14 +262,8 @@ def test_categorical_histogram_combined(ip, diamonds_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_categorical_and_numeric_histogram_combined(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
-    (ggplot(table=diamonds_data) + aes(x=["color", "carat"]) + geom_histogram(bins=20))
+def test_categorical_and_numeric_histogram_combined(diamonds_data):
+    (ggplot(diamonds_data, aes(x=["color", "carat"])) + geom_histogram(bins=20))
 
 
 @cleanup
@@ -306,16 +272,9 @@ def test_categorical_and_numeric_histogram_combined(ip, diamonds_data):
     extensions=["png"],
     remove_text=True,
 )
-def test_categorical_and_numeric_histogram_combined_custom_fill(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_categorical_and_numeric_histogram_combined_custom_fill(diamonds_data):
     (
-        ggplot(table=diamonds_data)
-        + aes(x=["color", "carat"])
+        ggplot(diamonds_data, aes(x=["color", "carat"]))
         + geom_histogram(bins=20, fill="red")
     )
 
@@ -326,18 +285,9 @@ def test_categorical_and_numeric_histogram_combined_custom_fill(ip, diamonds_dat
     extensions=["png"],
     remove_text=True,
 )
-def test_categorical_and_numeric_histogram_combined_custom_multi_fill(
-    ip, diamonds_data
-):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_categorical_and_numeric_histogram_combined_custom_multi_fill(diamonds_data):
     (
-        ggplot(table=diamonds_data)
-        + aes(x=["color", "carat"])
+        ggplot(diamonds_data, aes(x=["color", "carat"]))
         + geom_histogram(bins=20, fill=["red", "blue"])
     )
 
@@ -348,18 +298,9 @@ def test_categorical_and_numeric_histogram_combined_custom_multi_fill(
     extensions=["png"],
     remove_text=True,
 )
-def test_categorical_and_numeric_histogram_combined_custom_multi_color(
-    ip, diamonds_data
-):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_categorical_and_numeric_histogram_combined_custom_multi_color(diamonds_data):
     (
-        ggplot(table=diamonds_data)
-        + aes(x=["color", "carat"])
+        ggplot(diamonds_data, aes(x=["color", "carat"]))
         + geom_histogram(bins=20, color=["green", "magenta"])
     )
 
@@ -386,58 +327,100 @@ def test_categorical_and_numeric_histogram_combined_custom_multi_color(
     ],
 )
 def test_example_histogram_stacked_input_error(
-    ip, diamonds_data, x, expected_error, expected_error_message
+    diamonds_data, x, expected_error, expected_error_message
 ):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
     with pytest.raises(expected_error) as error:
-        (ggplot(table=diamonds_data) + aes(x=x, fill="cut") + geom_histogram(bins=500))
+        (ggplot(diamonds_data, aes(x=x, fill="cut")) + geom_histogram(bins=500))
 
     assert expected_error_message in str(error.value)
 
 
-def test_histogram_no_bins_error(ip, diamonds_data):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_histogram_no_bins_error(diamonds_data):
     with pytest.raises(ValueError) as error:
-        (ggplot(table=diamonds_data) + aes(x=["price"]) + geom_histogram())
+        (ggplot(diamonds_data, aes(x=["price"])) + geom_histogram())
 
     assert "Please specify a valid number of bins." in str(error.value)
 
 
-# test test test
 @cleanup
 @image_comparison(
-    baseline_images=["histogram_numeric_categorical_combined_custom_multi_color"],
-    #  "histogram_with_default"],
+    baseline_images=["facet_wrap_default"],
     extensions=["png"],
-    remove_text=True,
+    remove_text=False,
 )
-def test_facet_wrap(
-    ip, diamonds_data, capsys
-):
-    ip.run_cell(
-        """
-        %sql duckdb://
-        """
-    )
-
+def test_facet_wrap_default(penguins_no_nulls):
     (
-        ggplot(diamonds_data, aes(x=["color", "carat"]))
-        # + facet_wrap('~cut')
-        +
-        geom_histogram(bins=20, color=["green", "magenta"])
-
+        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        + geom_histogram(bins=10)
+        + facet_wrap("sex")
     )
 
-    with capsys.disabled():
-        o, e = capsys.readouterr()
-        print(o)
+
+@cleanup
+@image_comparison(
+    baseline_images=["facet_wrap_default_no_legend"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_default_no_legend(penguins_no_nulls):
+    (
+        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        + geom_histogram(bins=10)
+        + facet_wrap("sex", legend=False)
+    )
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["facet_wrap_custom_fill"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_custom_fill(penguins_no_nulls):
+    (
+        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        + geom_histogram(bins=10, fill=["red"])
+        + facet_wrap("sex")
+    )
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["facet_wrap_custom_fill_and_color"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_custom_fill_and_color(penguins_no_nulls):
+    (
+        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        + geom_histogram(bins=10, color="#fff", fill=["red"])
+        + facet_wrap("sex")
+    )
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["facet_wrap_custom_stacked_histogram"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_stacked_histogram(diamonds_data):
+    (
+        ggplot(diamonds_data, aes(x=["price"], fill="color"))
+        + geom_histogram(bins=10)
+        + facet_wrap("cut")
+    )
+
+
+@cleanup
+@image_comparison(
+    baseline_images=["facet_wrap_custom_stacked_histogram_cmap"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_stacked_histogram_cmap(diamonds_data):
+    (
+        ggplot(diamonds_data, aes(x=["price"], fill="color", cmap="plasma"))
+        + geom_histogram(bins=10)
+        + facet_wrap("cut")
+    )

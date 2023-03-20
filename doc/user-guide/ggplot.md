@@ -48,17 +48,13 @@ if not Path("yellow_tripdata_2021-01.parquet").is_file():
 ## Import
 
 ```{code-cell} ipython3
-from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram
+from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram, facet_wrap
 ```
 
 ## Example : Boxplot
 
 ```{code-cell} ipython3
-(
-    ggplot(table="yellow_tripdata_2021-01.parquet")
-    + aes(x="trip_distance")
-    + geom_boxplot()
-)
+(ggplot("yellow_tripdata_2021-01.parquet", aes(x="trip_distance")) + geom_boxplot())
 ```
 
 ## Example : Histogram
@@ -73,8 +69,7 @@ WHERE trip_distance < 6.3
 
 ```{code-cell} ipython3
 (
-    ggplot(table="short-trips", with_="short-trips")
-    + aes(x="trip_distance")
+    ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
     + geom_histogram(bins=10)
 )
 ```
@@ -85,8 +80,7 @@ By modifying the `fill` and `color` attributes, we can apply our custom style
 
 ```{code-cell} ipython3
 (
-    ggplot(table="short-trips", with_="short-trips")
-    + aes(x="trip_distance")
+    ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
     + geom_histogram(bins=10, fill="#69f0ae", color="#fff")
 )
 ```
@@ -95,8 +89,11 @@ When using multiple columns we can apply color on each column
 
 ```{code-cell} ipython3
 (
-    ggplot(table="short-trips", with_="short-trips")
-    + aes(x=["PULocationID", "DOLocationID"])
+    ggplot(
+        table="short-trips",
+        with_="short-trips",
+        aes=aes(x=["PULocationID", "DOLocationID"]),
+    )
     + geom_histogram(bins=10, fill=["#d500f9", "#fb8c00"], color="white")
 )
 ```
@@ -111,7 +108,7 @@ from urllib.request import urlretrieve
 
 if not Path("diamonds.csv").is_file():
     urlretrieve(
-        "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv", # noqa
+        "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv",  # noqa
         "diamonds.csv",
     )
 ```
@@ -125,21 +122,20 @@ Now, let's create a histogram of the different cuts of the diamonds by setting `
 Please note, since the values of `cut` are strings, we don't need the `bins` attribute here.
 
 ```{code-cell} ipython3
-(ggplot(table="diamonds") + aes(x="cut") + geom_histogram())
+(ggplot("diamonds", aes(x="cut")) + geom_histogram())
 ```
 
 We can show a histogram of multiple columns by setting `x=['cut', 'color']`
 
 ```{code-cell} ipython3
-(ggplot(table="diamonds") + aes(x=["cut", "color"]) + geom_histogram())
+(ggplot("diamonds", aes(x=["cut", "color"])) + geom_histogram())
 ```
 
 Apply a custom color with `color` and `fill`
 
 ```{code-cell} ipython3
 (
-    ggplot(table="diamonds")
-    + aes(x="price", fill="cut")
+    ggplot("diamonds", aes(x="price", fill="cut"))
     + geom_histogram(bins=10, fill="green", color="white")
 )
 ```
@@ -147,15 +143,35 @@ Apply a custom color with `color` and `fill`
 If we map the `fill` aesthetic to a different variable such as `payment_type`, the bars will stack automatically. Each colored rectangle on the stacked bars will represent a unique combination of `price` and `cut`.
 
 ```{code-cell} ipython3
-(ggplot(table="diamonds") + aes(x="price", fill="cut") + geom_histogram(bins=10))
+(ggplot("diamonds", aes(x="price", fill="cut")) + geom_histogram(bins=10))
 ```
 
 We can apply a different coloring using `cmap`
 
 ```{code-cell} ipython3
 (
-    ggplot(table="diamonds")
-    + aes(x="price", fill="cut", cmap="plasma")
+    ggplot("diamonds", aes(x="price", fill="cut", cmap="plasma"))
     + geom_histogram(bins=10)
+)
+```
+
+## Example : Facet wrap
+
+`facet_wrap()` arranges a sequence of panels into a 2D grid, which is beneficial when dealing with a single variable that has multiple levels, and you want to arrange the plots in a more space efficient manner.
+
+Let's see an example of how we can arrange the diamonds `price` histogram for each different `color`
+
+```{code-cell} ipython3
+(ggplot("diamonds", aes(x="price")) + geom_histogram(bins=10) + facet_wrap("color"))
+```
+
+We can even check the stacked histogram of `price` by `cut`, for each different `color`.
+Let's also hide legend with `legend=False` to see every plot.
+
+```{code-cell} ipython3
+(
+    ggplot("diamonds", aes(x="price", fill="cut"))
+    + geom_histogram(bins=10)
+    + facet_wrap("color", legend=False)
 )
 ```

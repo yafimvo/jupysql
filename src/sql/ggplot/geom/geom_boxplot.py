@@ -10,15 +10,13 @@ class geom_boxplot(geom):
     def __init__(self):
         pass
 
-    def __radd__(self, gg):
-
-        p = plot.boxplot(
+    def draw(self, gg, ax=None):
+        plot.boxplot(
             table=gg.table,
             column=gg.mapping.x,
             conn=gg.conn,
-            with_=gg.with_
+            with_=gg.with_,
+            ax=ax or gg.axs[0]
         )
-
-        gg.plot = p
 
         return gg

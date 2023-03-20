@@ -17,7 +17,7 @@ class geom_histogram(geom):
 
         super().__init__(**kwargs)
 
-    def draw(self, gg):
+    def draw(self, gg, ax=None, facet=None):
         plot.histogram(table=gg.table,
                        column=gg.mapping.x,
                        cmap=gg.mapping.cmap,
@@ -27,32 +27,7 @@ class geom_histogram(geom):
                        category=gg.mapping.fill,
                        color=self.fill,
                        edgecolor=self.color,
-                       ax=gg.ax
+                       facet=facet,
+                       ax=ax or gg.axs[0]
                        )
-        return gg
-
-    # def __radd__(self, gg):
-    #     p = plot.histogram(table=gg.table,
-    #                        column=gg.mapping.x,
-    #                        cmap=gg.mapping.cmap,
-    #                        bins=self.bins,
-    #                        conn=gg.conn,
-    #                        with_=gg.with_,
-    #                        category=gg.mapping.fill,
-    #                        color=self.fill,
-    #                        edgecolor=self.color
-    #                        )
-    #     gg.plot = p
-    #     return gg
-
-    def __add__(self, gg):
-        return gg
-
-    # def __iadd__(self, other):
-    #     print("adding geom 2", type(other))
-    #     return other.__radd__(self)
-
-    def __radd__(self, gg):
-        print("adding geom 3", type(gg))
-        gg + self
         return gg
