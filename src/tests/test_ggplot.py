@@ -15,7 +15,7 @@ def short_trips_data(ip, yellow_trip_data):
 
     ip.run_cell(
         f"""
-        %%sql --save short-trips --no-execute
+        %%sql --save short_trips --no-execute
         select * from "{yellow_trip_data}"
         WHERE trip_distance < 6.3
         """
@@ -84,7 +84,7 @@ def penguins_no_nulls(ip, penguins_data):
 
     ip.run_cell(
         f"""
-%%sql --save no-nulls --no-execute
+%%sql --save no_nulls --no-execute
 SELECT *
 FROM "{penguins_data}"
 WHERE body_mass_g IS NOT NULL and
@@ -103,7 +103,7 @@ def test_ggplot_geom_boxplot(yellow_trip_data):
 @image_comparison(
     baseline_images=["histogram_default"], extensions=["png"], remove_text=True
 )
-def test_ggplot_geom_histogram(ip, yellow_trip_data):
+def test_ggplot_geom_histogram(yellow_trip_data):
     (
         ggplot(yellow_trip_data, aes(x="trip_distance"))
         + geom_histogram(bins=10, color="white")
@@ -116,7 +116,7 @@ def test_ggplot_geom_histogram(ip, yellow_trip_data):
 )
 def test_ggplot_geom_histogram_with(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
+        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10)
     )
 
@@ -127,7 +127,7 @@ def test_ggplot_geom_histogram_with(short_trips_data):
 )
 def test_ggplot_geom_histogram_edge_color(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
+        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10, color="white")
     )
 
@@ -138,7 +138,7 @@ def test_ggplot_geom_histogram_edge_color(short_trips_data):
 )
 def test_ggplot_geom_histogram_fill(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
+        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10, fill="red")
     )
 
@@ -151,7 +151,7 @@ def test_ggplot_geom_histogram_fill(short_trips_data):
 )
 def test_ggplot_geom_histogram_fill_and_color(short_trips_data):
     (
-        ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
+        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
         + geom_histogram(bins=10, fill="red", color="#fff")
     )
 
@@ -313,7 +313,7 @@ def test_categorical_and_numeric_histogram_combined_custom_multi_color(diamonds_
 )
 def test_facet_wrap_default(penguins_no_nulls):
     (
-        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
         + geom_histogram(bins=10)
         + facet_wrap("sex")
     )
@@ -327,7 +327,7 @@ def test_facet_wrap_default(penguins_no_nulls):
 )
 def test_facet_wrap_default_no_legend(penguins_no_nulls):
     (
-        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
         + geom_histogram(bins=10)
         + facet_wrap("sex", legend=False)
     )
@@ -341,7 +341,7 @@ def test_facet_wrap_default_no_legend(penguins_no_nulls):
 )
 def test_facet_wrap_custom_fill(penguins_no_nulls):
     (
-        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
         + geom_histogram(bins=10, fill=["red"])
         + facet_wrap("sex")
     )
@@ -355,7 +355,7 @@ def test_facet_wrap_custom_fill(penguins_no_nulls):
 )
 def test_facet_wrap_custom_fill_and_color(penguins_no_nulls):
     (
-        ggplot(table="no-nulls", with_="no-nulls", aes=aes(x=["bill_depth_mm"]))
+        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
         + geom_histogram(bins=10, color="#fff", fill=["red"])
         + facet_wrap("sex")
     )
