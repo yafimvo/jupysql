@@ -16,7 +16,7 @@ class geom_histogram(geom):
         'x' and 'fill'
 
     cmap : str, default 'viridis
-        Apply a color map to the stacked graph        
+        Apply a color map to the stacked graph
     """
 
     def __init__(self, bins=None, fill=None, cmap=None, **kwargs):

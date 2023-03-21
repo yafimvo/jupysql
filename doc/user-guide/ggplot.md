@@ -115,7 +115,11 @@ By modifying the `fill` and `color` attributes, we can apply our custom style
 
 ```{code-cell} ipython3
 (
-    ggplot(table="short_trips", with_="short_trips", mapping=aes(x="trip_distance", fill="#69f0ae", color="#fff"))
+    ggplot(
+        table="short_trips",
+        with_="short_trips",
+        mapping=aes(x="trip_distance", fill="#69f0ae", color="#fff"),
+    )
     + geom_histogram(bins=10)
 )
 ```
@@ -127,7 +131,11 @@ When using multiple columns we can apply color on each column
     ggplot(
         table="short_trips",
         with_="short_trips",
-        mapping=aes(x=["PULocationID", "DOLocationID"], fill=["#d500f9", "#fb8c00"], color="white"),
+        mapping=aes(
+            x=["PULocationID", "DOLocationID"],
+            fill=["#d500f9", "#fb8c00"],
+            color="white",
+        ),
     )
     + geom_histogram(bins=10)
 )
