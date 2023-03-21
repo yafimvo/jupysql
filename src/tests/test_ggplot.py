@@ -105,8 +105,8 @@ def test_ggplot_geom_boxplot(yellow_trip_data):
 )
 def test_ggplot_geom_histogram(yellow_trip_data):
     (
-        ggplot(yellow_trip_data, aes(x="trip_distance"))
-        + geom_histogram(bins=10, color="white")
+        ggplot(yellow_trip_data, aes(x="trip_distance", color="white"))
+        + geom_histogram(bins=10)
     )
 
 
@@ -116,7 +116,7 @@ def test_ggplot_geom_histogram(yellow_trip_data):
 )
 def test_ggplot_geom_histogram_with(short_trips_data):
     (
-        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
+        ggplot(table="short_trips", with_="short_trips", mapping=aes(x="trip_distance"))
         + geom_histogram(bins=10)
     )
 
@@ -127,8 +127,9 @@ def test_ggplot_geom_histogram_with(short_trips_data):
 )
 def test_ggplot_geom_histogram_edge_color(short_trips_data):
     (
-        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
-        + geom_histogram(bins=10, color="white")
+        ggplot(table="short_trips", with_="short_trips",
+               mapping=aes(x="trip_distance", color="white"))
+        + geom_histogram(bins=10)
     )
 
 
@@ -138,8 +139,9 @@ def test_ggplot_geom_histogram_edge_color(short_trips_data):
 )
 def test_ggplot_geom_histogram_fill(short_trips_data):
     (
-        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
-        + geom_histogram(bins=10, fill="red")
+        ggplot(table="short_trips", with_="short_trips",
+               mapping=aes(x="trip_distance", fill="red"))
+        + geom_histogram(bins=10)
     )
 
 
@@ -151,8 +153,9 @@ def test_ggplot_geom_histogram_fill(short_trips_data):
 )
 def test_ggplot_geom_histogram_fill_and_color(short_trips_data):
     (
-        ggplot(table="short_trips", with_="short_trips", aes=aes(x="trip_distance"))
-        + geom_histogram(bins=10, fill="red", color="#fff")
+        ggplot(table="short_trips", with_="short_trips", mapping=aes(
+            x="trip_distance", fill="red", color="#fff"))
+        + geom_histogram(bins=10)
     )
 
 
@@ -170,7 +173,7 @@ def test_ggplot_geom_histogram_fill_and_color(short_trips_data):
     remove_text=True,
 )
 def test_example_histogram_stacked_default(diamonds_data, x):
-    (ggplot(diamonds_data, aes(x=x, fill="cut")) + geom_histogram(bins=10))
+    (ggplot(diamonds_data, aes(x=x)) + geom_histogram(bins=10, fill="cut"))
 
 
 @cleanup
@@ -181,8 +184,8 @@ def test_example_histogram_stacked_default(diamonds_data, x):
 )
 def test_example_histogram_stacked_custom_cmap(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x="price", fill="cut", cmap="plasma"))
-        + geom_histogram(bins=10)
+        ggplot(diamonds_data, aes(x="price"))
+        + geom_histogram(bins=10, fill="cut", cmap="plasma")
     )
 
 
@@ -194,8 +197,8 @@ def test_example_histogram_stacked_custom_cmap(diamonds_data):
 )
 def test_example_histogram_stacked_custom_color(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x="price", cmap="plasma", fill="cut"))
-        + geom_histogram(bins=10, color="k")
+        ggplot(diamonds_data, aes(x="price", color="k"))
+        + geom_histogram(bins=10, cmap="plasma", fill="cut")
     )
 
 
@@ -207,8 +210,8 @@ def test_example_histogram_stacked_custom_color(diamonds_data):
 )
 def test_example_histogram_stacked_custom_color_and_fill(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x="price", cmap="plasma", fill="cut"))
-        + geom_histogram(bins=10, color="white", fill="red")
+        ggplot(diamonds_data, aes(x="price", color="white", fill="red"))
+        + geom_histogram(bins=10, cmap="plasma", fill="cut")
     )
 
 
@@ -221,8 +224,8 @@ def test_example_histogram_stacked_custom_color_and_fill(diamonds_data):
 def test_ggplot_geom_histogram_fill_with_multi_color_warning(diamonds_data):
     with pytest.warns(UserWarning):
         (
-            ggplot(diamonds_data, aes(x="price", cmap="plasma", fill="cut"))
-            + geom_histogram(bins=10, color="white", fill=["red", "blue"])
+            ggplot(diamonds_data, aes(x="price", color="white", fill=["red", "blue"]))
+            + geom_histogram(bins=10, cmap="plasma", fill="cut")
         )
 
 
@@ -233,7 +236,7 @@ def test_ggplot_geom_histogram_fill_with_multi_color_warning(diamonds_data):
     remove_text=True,
 )
 def test_example_histogram_stacked_with_large_bins(diamonds_data):
-    (ggplot(diamonds_data, aes(x="price", fill="cut")) + geom_histogram(bins=400))
+    (ggplot(diamonds_data, aes(x="price")) + geom_histogram(bins=400, fill="cut"))
 
 
 @cleanup
@@ -274,8 +277,8 @@ def test_categorical_and_numeric_histogram_combined(diamonds_data):
 )
 def test_categorical_and_numeric_histogram_combined_custom_fill(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x=["color", "carat"]))
-        + geom_histogram(bins=20, fill="red")
+        ggplot(diamonds_data, aes(x=["color", "carat"], fill="red"))
+        + geom_histogram(bins=20)
     )
 
 
@@ -287,8 +290,8 @@ def test_categorical_and_numeric_histogram_combined_custom_fill(diamonds_data):
 )
 def test_categorical_and_numeric_histogram_combined_custom_multi_fill(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x=["color", "carat"]))
-        + geom_histogram(bins=20, fill=["red", "blue"])
+        ggplot(diamonds_data, aes(x=["color", "carat"], fill=["red", "blue"]))
+        + geom_histogram(bins=20)
     )
 
 
@@ -300,8 +303,8 @@ def test_categorical_and_numeric_histogram_combined_custom_multi_fill(diamonds_d
 )
 def test_categorical_and_numeric_histogram_combined_custom_multi_color(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x=["color", "carat"]))
-        + geom_histogram(bins=20, color=["green", "magenta"])
+        ggplot(diamonds_data, aes(x=["color", "carat"], color=["green", "magenta"]))
+        + geom_histogram(bins=20)
     )
 
 
@@ -313,7 +316,7 @@ def test_categorical_and_numeric_histogram_combined_custom_multi_color(diamonds_
 )
 def test_facet_wrap_default(penguins_no_nulls):
     (
-        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
+        ggplot(table="no_nulls", with_="no_nulls", mapping=aes(x=["bill_depth_mm"]))
         + geom_histogram(bins=10)
         + facet_wrap("sex")
     )
@@ -327,7 +330,7 @@ def test_facet_wrap_default(penguins_no_nulls):
 )
 def test_facet_wrap_default_no_legend(penguins_no_nulls):
     (
-        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
+        ggplot(table="no_nulls", with_="no_nulls", mapping=aes(x=["bill_depth_mm"]))
         + geom_histogram(bins=10)
         + facet_wrap("sex", legend=False)
     )
@@ -341,8 +344,9 @@ def test_facet_wrap_default_no_legend(penguins_no_nulls):
 )
 def test_facet_wrap_custom_fill(penguins_no_nulls):
     (
-        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
-        + geom_histogram(bins=10, fill=["red"])
+        ggplot(table="no_nulls", with_="no_nulls",
+               mapping=aes(x=["bill_depth_mm"], fill=["red"]))
+        + geom_histogram(bins=10)
         + facet_wrap("sex")
     )
 
@@ -355,8 +359,9 @@ def test_facet_wrap_custom_fill(penguins_no_nulls):
 )
 def test_facet_wrap_custom_fill_and_color(penguins_no_nulls):
     (
-        ggplot(table="no_nulls", with_="no_nulls", aes=aes(x=["bill_depth_mm"]))
-        + geom_histogram(bins=10, color="#fff", fill=["red"])
+        ggplot(table="no_nulls", with_="no_nulls", mapping=aes(
+            x=["bill_depth_mm"], color="#fff", fill=["red"]))
+        + geom_histogram(bins=10)
         + facet_wrap("sex")
     )
 
@@ -369,8 +374,8 @@ def test_facet_wrap_custom_fill_and_color(penguins_no_nulls):
 )
 def test_facet_wrap_stacked_histogram(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x=["price"], fill="color"))
-        + geom_histogram(bins=10)
+        ggplot(diamonds_data, aes(x=["price"]))
+        + geom_histogram(bins=10, fill="color")
         + facet_wrap("cut")
     )
 
@@ -383,8 +388,8 @@ def test_facet_wrap_stacked_histogram(diamonds_data):
 )
 def test_facet_wrap_stacked_histogram_cmap(diamonds_data):
     (
-        ggplot(diamonds_data, aes(x=["price"], fill="color", cmap="plasma"))
-        + geom_histogram(bins=10)
+        ggplot(diamonds_data, aes(x=["price"]))
+        + geom_histogram(bins=10, fill="color", cmap="plasma")
         + facet_wrap("cut")
     )
 
@@ -414,7 +419,7 @@ def test_example_histogram_stacked_input_error(
     diamonds_data, x, expected_error, expected_error_message
 ):
     with pytest.raises(expected_error) as error:
-        (ggplot(diamonds_data, aes(x=x, fill="cut")) + geom_histogram(bins=500))
+        (ggplot(diamonds_data, aes(x=x)) + geom_histogram(bins=500, fill="cut"))
 
     assert expected_error_message in str(error.value)
 

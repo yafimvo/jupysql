@@ -24,10 +24,10 @@ class ggplot:
     figure: mpl.figure.Figure
     axs: list
 
-    def __init__(self, table, aes: aes = None, conn=None, with_=None) -> None:
+    def __init__(self, table, mapping: aes = None, conn=None, with_=None) -> None:
         self.table = table
         self.with_ = [with_] if with_ else None
-        self.mapping = aes if aes is not None else aes()
+        self.mapping = mapping if mapping is not None else aes()
         self.conn = conn
 
         figure, axs = _create_single_panel_ax()

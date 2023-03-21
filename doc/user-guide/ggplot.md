@@ -18,13 +18,63 @@ myst:
 
 # ggplot
 
-The `ggplot` API is structured around the principles of the grammar of graphics, and it comprises three primary components:
-1. Data - a reference to our SQL tables
-2. Aesthetic - A mapping of one or more variables to one or more visual elements on the graph, e.g: map `x` and `y` to the x-axis and the y-axis.
-3. Geometric - The type or shape of the visual elements on the graph, e.g: `geom_boxplot` and `geom_histogram`
+```{versionadded} 0.7
+```
 
+The `ggplot` API is structured around the principles of the grammar of graphics, and allows you to build any graph using the same components: a data set, a coordinate system, and geoms (geometric objects).
 
-## Download the data
+To make it suitble for JupySQL, specifically for the purpose of running SQL and plotting larger-than-memory datasets on any laptop, we made a small modification from the original `ggplot2` API. Rather than providing a dataset, we now provide a SQL table name.
+ 
+Other than that, at this point we support:
+
+Aes: 
+* `x` - a SQL column mapping
+* `color` and `fill` to apply edgecolor and fill colors to plot shapes
+
+Geoms: 
+* `geom_boxplot`
+* `geom_histogram`
+
+Facet:
+* `facet_wrap` to display multiple plots in 1 layout
+
+Please note that each geom has its own unique attributes, e.g: number of bins in `geom_histogram`. We'll cover all the possible parameters in this tutorial.
+
+## Building a graph
+
+To build a graph, we first should initialize a `ggplot` instance with a reference to our SQL table using the `table` parameter, and a mapping object.
+Here's is the complete template to build any graph.
+
+```python
+(
+    ggplot(table='sql_table_name', mapping=aes(x='table_column_name'))
+    +
+    geom_func() # geom_histogram or geom_boxplot (required)
+    +
+    facet_func() # facet_wrap (optional)
+)
+```
+
+```{note}
+Please note this is the 1st release of `ggplot` API. We highly encourage you to provide us with your feedback through our [Slack](https://ploomber.io/community) channel to assist us in improving the API and addressing any issues as soon as possible.
+```
+
+## Examples
+
+First, establish the connection, import necessary functions and prepare the data.
+
+### Setup
+
+```{code-cell} ipython3
+:tags: [hide-output]
+
+%load_ext sql
+%sql duckdb://
+```
+
+```{code-cell} ipython3
+from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram, facet_wrap
+```
 
 ```{code-cell} ipython3
 from pathlib import Path
@@ -36,52 +86,37 @@ if not Path("yellow_tripdata_2021-01.parquet").is_file():
     urlretrieve(url, "yellow_tripdata_2021-01.parquet")
 ```
 
-## Setup
-
-```{code-cell} ipython3
-:tags: [hide-output]
-
-%load_ext sql
-%sql duckdb://
-```
-
-## Import
-
-```{code-cell} ipython3
-from sql.ggplot import ggplot, aes, geom_boxplot, geom_histogram, facet_wrap
-```
-
-## Example : Boxplot
+### Boxplot
 
 ```{code-cell} ipython3
 (ggplot("yellow_tripdata_2021-01.parquet", aes(x="trip_distance")) + geom_boxplot())
 ```
 
-## Example : Histogram
+### Histogram
 
-To make it more interesting, let's create a query that filters by the 90th percentile. Note that we're using the `--save`, and `--no-execute` functions. This tells JupySQL to store the query, but *skips execution*. We'll reference it in our next plotting call.
+To make it more interesting, let's create a query that filters by the 90th percentile. Note that we're using the `--save`, and `--no-execute` functions. This tells JupySQL to store the query, but *skips execution*. We'll reference it in our next plotting calls using the `with_` parameter.
 
 ```{code-cell} ipython3
-%%sql --save short-trips --no-execute
+%%sql --save short_trips --no-execute
 select * from 'yellow_tripdata_2021-01.parquet'
 WHERE trip_distance < 6.3
 ```
 
 ```{code-cell} ipython3
 (
-    ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
+    ggplot(table="short_trips", with_="short_trips", mapping=aes(x="trip_distance"))
     + geom_histogram(bins=10)
 )
 ```
 
-## Example : Custom Style
+### Custom Style
 
 By modifying the `fill` and `color` attributes, we can apply our custom style
 
 ```{code-cell} ipython3
 (
-    ggplot(table="short-trips", with_="short-trips", aes=aes(x="trip_distance"))
-    + geom_histogram(bins=10, fill="#69f0ae", color="#fff")
+    ggplot(table="short_trips", with_="short_trips", mapping=aes(x="trip_distance", fill="#69f0ae", color="#fff"))
+    + geom_histogram(bins=10)
 )
 ```
 
@@ -90,15 +125,15 @@ When using multiple columns we can apply color on each column
 ```{code-cell} ipython3
 (
     ggplot(
-        table="short-trips",
-        with_="short-trips",
-        aes=aes(x=["PULocationID", "DOLocationID"]),
+        table="short_trips",
+        with_="short_trips",
+        mapping=aes(x=["PULocationID", "DOLocationID"], fill=["#d500f9", "#fb8c00"], color="white"),
     )
-    + geom_histogram(bins=10, fill=["#d500f9", "#fb8c00"], color="white")
+    + geom_histogram(bins=10)
 )
 ```
 
-## Example : Categorical histogram
+### Categorical histogram
 
 To make it easier to demonstrate, let's use `ggplot2` diamonds dataset.
 
@@ -135,27 +170,27 @@ Apply a custom color with `color` and `fill`
 
 ```{code-cell} ipython3
 (
-    ggplot("diamonds", aes(x="price", fill="cut"))
-    + geom_histogram(bins=10, fill="green", color="white")
+    ggplot("diamonds", aes(x="price", fill="green", color="white"))
+    + geom_histogram(bins=10, fill="cut")
 )
 ```
 
-If we map the `fill` aesthetic to a different variable such as `payment_type`, the bars will stack automatically. Each colored rectangle on the stacked bars will represent a unique combination of `price` and `cut`.
+If we map the `fill` attribute to a different variable such as `cut`, the bars will stack automatically. Each colored rectangle on the stacked bars will represent a unique combination of `price` and `cut`.
 
 ```{code-cell} ipython3
-(ggplot("diamonds", aes(x="price", fill="cut")) + geom_histogram(bins=10))
+(ggplot("diamonds", aes(x="price")) + geom_histogram(bins=10, fill="cut"))
 ```
 
 We can apply a different coloring using `cmap`
 
 ```{code-cell} ipython3
 (
-    ggplot("diamonds", aes(x="price", fill="cut", cmap="plasma"))
-    + geom_histogram(bins=10)
+    ggplot("diamonds", aes(x="price"))
+    + geom_histogram(bins=10, fill="cut", cmap="plasma")
 )
 ```
 
-## Example : Facet wrap
+### Facet wrap
 
 `facet_wrap()` arranges a sequence of panels into a 2D grid, which is beneficial when dealing with a single variable that has multiple levels, and you want to arrange the plots in a more space efficient manner.
 
@@ -165,13 +200,13 @@ Let's see an example of how we can arrange the diamonds `price` histogram for ea
 (ggplot("diamonds", aes(x="price")) + geom_histogram(bins=10) + facet_wrap("color"))
 ```
 
-We can even check the stacked histogram of `price` by `cut`, for each different `color`.
-Let's also hide legend with `legend=False` to see every plot.
+We can even examine the stacked histogram of `price` by `cut`, for each different `color`.
+Let's also hide legend with `legend=False` to see each plot clearly.
 
 ```{code-cell} ipython3
 (
-    ggplot("diamonds", aes(x="price", fill="cut"))
-    + geom_histogram(bins=10)
+    ggplot("diamonds", aes(x="price"))
+    + geom_histogram(bins=10, fill="cut")
     + facet_wrap("color", legend=False)
 )
 ```
