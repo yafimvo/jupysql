@@ -1,5 +1,5 @@
 from sql import plot
-from .geom import geom
+from sql.ggplot.geom.geom import geom
 
 
 class geom_histogram(geom):

@@ -377,17 +377,17 @@ def histogram(
         if column is None or len(column) == 0:
             raise ValueError("Column name has not been specified")
 
-        bin_, height = _histogram(table, column, bins, with_=with_, conn=conn)
+        bin_, height, bin_size = _histogram(table, column, bins, with_=with_, conn=conn)
         width = _get_bar_width(ax, bin_)
-        categorical_histogram_df = _histogram_stacked(
-            table, column, category, bins, with_=with_, conn=conn, facet=facet
+        data = _histogram_stacked(
+            table, column, category, bin_, bin_size, with_=with_, conn=conn, facet=facet
         )
         cmap = plt.get_cmap(cmap or "viridis")
-        norm = Normalize(vmin=0, vmax=len(categorical_histogram_df.index))
+        norm = Normalize(vmin=0, vmax=len(data))
 
         bottom = np.zeros(len(bin_))
-        for i in range(len(categorical_histogram_df.index)):
-            value = list(categorical_histogram_df.iloc[i])
+        for i, values in enumerate(data):
+            values_ = values[1:]
 
             if isinstance(color, list):
                 color_ = color[0]
@@ -408,20 +408,20 @@ def histogram(
 
             ax.bar(
                 bin_,
-                value,
+                values_,
                 align="center",
-                label=categorical_histogram_df.iloc[i].name,
+                label=values[0],
                 width=width,
                 bottom=bottom,
                 edgecolor=edgecolor_,
                 color=color_,
             )
-            bottom += value
+            bottom += values_
 
         ax.set_title(f"Histogram from {table!r}")
         ax.legend()
     elif isinstance(column, str):
-        bin_, height = _histogram(
+        bin_, height, _ = _histogram(
             table, column, bins, with_=with_, conn=conn, facet=facet
         )
         width = _get_bar_width(ax, bin_)
@@ -440,7 +440,7 @@ def histogram(
 
     else:
         for i, col in enumerate(column):
-            bin_, height = _histogram(
+            bin_, height, _ = _histogram(
                 table, col, bins, with_=with_, conn=conn, facet=facet
             )
             width = _get_bar_width(ax, bin_)
@@ -483,6 +483,8 @@ def _histogram(table, column, bins, with_=None, conn=None, facet=None):
     min_, max_ = _min_max(conn, table, column, with_=with_)
 
     filter_query = f"WHERE {facet['key']} == '{facet['value']}'" if facet else ""
+
+    bin_size = None
 
     if _are_numeric_values(min_, max_):
         if not isinstance(bins, int):
@@ -530,51 +532,52 @@ def _histogram(table, column, bins, with_=None, conn=None, facet=None):
     if bin_[0] is None:
         raise ValueError("Data contains NULLs")
 
-    return bin_, height
+    return bin_, height, bin_size
 
 
 @modify_exceptions
 def _histogram_stacked(
-    table, column, category, bins, with_=None, conn=None, facet=None
+    table, column, category, bins, bin_size, with_=None, conn=None, facet=None,
 ):
-    """Compute bin size for the column and the corresponding
-    heights of each category value"""
+    """Compute the corresponding heights of each bin based on the category
+    """
     if not conn:
         conn = sql.connection.Connection.current.session
 
-    # FIXME: we're computing all the with elements twice
-    min_, max_ = _min_max(conn, table, column, with_=with_)
-    range_ = max_ - min_
-    bin_size = range_ / bins
+    cases = []
+    for bin in bins:
+        case = f'SUM(CASE WHEN floor = {bin} THEN count ELSE 0 END) AS "{bin}",'
+        cases.append(case)
+
+    cases = " ".join(cases)
 
     filter_query = f"WHERE {facet['key']} == '{facet['value']}'" if facet else ""
 
     template = Template(
         """
-select
-  floor("{{column}}"/{{bin_size}})*{{bin_size}},
-  {{category}}
-from "{{table}}"
-{{filter_query}}
-"""
+        SELECT {{category}},
+        {{cases}}
+        FROM (
+        SELECT FLOOR("{{column}}"/{{bin_size}})*{{bin_size}} AS floor,
+        {{category}}, COUNT(*) as count
+        FROM "{{table}}"
+        GROUP BY floor, {{category}}
+        {{filter_query}}
+        ) AS subquery
+        GROUP BY {{category}};
+        """
     )
-    query = template.render(
-        table=table,
-        column=column,
-        bin_size=bin_size,
-        category=category,
-        filter_query=filter_query,
-    )
+    query = template.render(table=table,
+                            column=column,
+                            bin_size=bin_size,
+                            category=category,
+                            filter_query=filter_query,
+                            cases=cases)
 
     if with_:
         query = str(store.render(query, with_=with_))
 
-    # TODO: We can use the duckdb pivot feature which will be released
-    # in 0.8 so we won't have to use dataframe
-    # https://github.com/duckdb/duckdb/pull/6387
-    import pandas as pd
+    query = sql.connection.Connection._transpile_query(query)
+    data = conn.execute(query).fetchall()
 
-    df = pd.read_sql(query, conn)
-    data = df.value_counts().unstack(fill_value=None)
-    data = data.transpose()
     return data

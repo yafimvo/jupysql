@@ -21,6 +21,10 @@ myst:
 ```{versionadded} 0.7
 ```
 
+```{note}
+`ggplot` API requires `matplotlib`: `pip install matplotlib`
+```
+
 The `ggplot` API is structured around the principles of the grammar of graphics, and allows you to build any graph using the same components: a data set, a coordinate system, and geoms (geometric objects).
 
 To make it suitble for JupySQL, specifically for the purpose of running SQL and plotting larger-than-memory datasets on any laptop, we made a small modification from the original `ggplot2` API. Rather than providing a dataset, we now provide a SQL table name.

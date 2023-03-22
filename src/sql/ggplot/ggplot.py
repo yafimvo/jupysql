@@ -3,6 +3,7 @@ from sql.ggplot.geom.geom import geom
 from sql.ggplot.facet_wrap import facet_wrap
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from ploomber_core.dependencies import requires
 
 
 def _expand_to_multipanel_ax(figure, ax_to_clear=None):
@@ -17,6 +18,7 @@ def _create_single_panel_ax():
     return figure, axs
 
 
+@requires(["matplotlib"])
 class ggplot:
     """
     Create a new ggplot
