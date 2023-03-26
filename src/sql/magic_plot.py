@@ -14,6 +14,7 @@ except ImportError:
 
 from sql import plot
 from sql.command import SQLPlotCommand
+from sql import util
 
 
 @magics_class
@@ -66,6 +67,8 @@ class SqlPlotMagic(Magics, Configurable):
             raise ValueError(
                 "Missing the first argument, must be: 'histogram' or 'boxplot'"
             )
+
+        util.is_table_exists(cmd.args.table)
 
         if cmd.args.line[0] in {"box", "boxplot"}:
             return plot.boxplot(
