@@ -40,7 +40,7 @@ def _is_long_number(num) -> bool:
 
 def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
     """
-    Check if given table exists for a given connection
+    Checks if a given table exists for a given connection
 
     Parameters
     ----------
@@ -69,15 +69,9 @@ def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
     else:
         table_ = table
 
-    _is_exist = False
-    try:
-        query = f'SELECT * FROM "{table_}" WHERE 1=0'
-        if with_:
-            query = str(store.render(query, with_=with_))
-        query = sql.connection.Connection._transpile_query(query)
-        sql.run.raw_run(Connection.current, query)
-        _is_exist = True
-    except Exception:
+    _is_exist = _is_table_exists(table_, with_)
+
+    if not _is_exist:
         if not ignore_error:
             expected = []
             existing_schemas = inspect.get_schema_names()
@@ -139,3 +133,30 @@ def pretty_print(obj, delimiter=",", last_delimiter="and", repr_=False) -> str:
 
 def strip_multiple_chars(s, chars):
     return s.translate(str.maketrans("", "", chars))
+
+
+def _is_table_exists(table, with_) -> bool:
+    """
+    Runs a SQL query to check if table exists
+    """
+    query = f'SELECT * FROM {table} WHERE 1=0'
+    if with_:
+        query = str(store.render(query, with_=with_))
+
+    try:
+        query = sql.connection.Connection._transpile_query(query)
+        sql.run.raw_run(Connection.current, query)
+        return True
+    except Exception:
+        pass
+
+    query = f'SELECT * FROM "{table}" WHERE 1=0'
+    if with_:
+        query = str(store.render(query, with_=with_))
+
+    try:
+        query = sql.connection.Connection._transpile_query(query)
+        sql.run.raw_run(Connection.current, query)
+        return True
+    except Exception:
+        return False
