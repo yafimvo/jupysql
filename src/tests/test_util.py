@@ -186,5 +186,5 @@ def test_is_table_exists_with(ip, table, expected_error, expected_suggestions):
 def test_get_list_of_existing_tables(ip):
     expected = ['author', 'empty_table', 'number_table', 'test', 'website']
     list_of_tables = util._get_list_of_existing_tables()
-    for table in list_of_tables:
-        assert table in expected
+    for table in expected:
+        assert table in list_of_tables
