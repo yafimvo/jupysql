@@ -147,8 +147,44 @@ def test_is_table_exists(ip, table, expected_error):
         util.is_table_exists(table)
 
 
+@pytest.mark.parametrize(
+    "table, expected_error, expected_suggestions",
+    [
+        ("number_table", None, []),
+        ("number_tale", ValueError, ["number_table"]),
+        ("_table", ValueError, ["number_table", "empty_table"]),
+        (None, ValueError, [])
+    ]
+)
+def test_is_table_exists_with(ip, table, expected_error, expected_suggestions):
+    with_ = ["temp"]
+
+    ip.run_cell(
+        f"""
+        %%sql --save {with_[0]} --no-execute
+        SELECT *
+        FROM {table}
+        WHERE x > 2
+        """
+    )
+    if expected_error:
+        with pytest.raises(expected_error) as error:
+            util.is_table_exists(table, with_=with_)
+
+        error_suggestions_arr = str(error.value).split("Did you mean")
+
+        if len(expected_suggestions) > 0:
+            assert len(error_suggestions_arr) > 1
+            for suggestion in expected_suggestions:
+                assert suggestion in error_suggestions_arr[1]
+        else:
+            assert len(error_suggestions_arr) == 1
+    else:
+        util.is_table_exists(table)
+
+
 def test_get_list_of_existing_tables(ip):
-    expected = ['author', 'empty_table', 'number_table', 'test']
+    expected = ['author', 'empty_table', 'number_table', 'test', 'website']
     list_of_tables = util._get_list_of_existing_tables()
     for table in list_of_tables:
         assert table in expected

@@ -2,6 +2,7 @@ from sql import inspect
 import difflib
 import sql.run
 from sql.connection import Connection
+from sql.store import store
 
 
 def convert_to_scientific(value):
@@ -37,7 +38,7 @@ def _is_long_number(num) -> bool:
     return False
 
 
-def is_table_exists(table, schema=None, ignore_error=False) -> bool:
+def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
     """
     Check if given table exists for a given connection
 
@@ -49,11 +50,17 @@ def is_table_exists(table, schema=None, ignore_error=False) -> bool:
     schema: str, default None
         Schema name
 
+    with_: list, default None
+        Temporary table
+
     ignore_error: bool, default False
         Avoid raising a ValueError
     """
     if table is None:
-        raise ValueError("Table cannot be None")
+        if ignore_error:
+            return False
+        else:
+            raise ValueError("Table cannot be None")
 
     if schema:
         table_ = f"{schema}.{table}"
@@ -62,7 +69,10 @@ def is_table_exists(table, schema=None, ignore_error=False) -> bool:
 
     _is_exist = False
     try:
-        sql.run.raw_run(Connection.current, f"SELECT * FROM {table_} WHERE 1=0")
+        query = f"SELECT * FROM {table_} WHERE 1=0"
+        if with_:
+            query = str(store.render(query, with_=with_))
+        sql.run.raw_run(Connection.current, query)
         _is_exist = True
     except Exception:
         if not ignore_error:

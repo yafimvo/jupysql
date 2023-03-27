@@ -68,9 +68,10 @@ class SqlPlotMagic(Magics, Configurable):
                 "Missing the first argument, must be: 'histogram' or 'boxplot'"
             )
 
-        util.is_table_exists(cmd.args.table)
-
         if cmd.args.line[0] in {"box", "boxplot"}:
+
+            util.is_table_exists(cmd.args.table, with_=cmd.args.with_)
+
             return plot.boxplot(
                 table=cmd.args.table,
                 column=column,
@@ -79,6 +80,9 @@ class SqlPlotMagic(Magics, Configurable):
                 conn=None,
             )
         elif cmd.args.line[0] in {"hist", "histogram"}:
+
+            util.is_table_exists(cmd.args.table, with_=cmd.args.with_)
+
             return plot.histogram(
                 table=cmd.args.table,
                 column=column,
