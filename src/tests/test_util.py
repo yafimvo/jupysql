@@ -119,7 +119,7 @@ ATTACH DATABASE 'my.db' AS test_schema
         ("author1", False),
         ("empty_table1", False),
         (None, False),
-    ]
+    ],
 )
 def test_is_table_exists_ignore_error(ip, table, expected_result):
     assert expected_result is util.is_table_exists(table, ignore_error=True)
@@ -137,7 +137,7 @@ def test_is_table_exists_ignore_error(ip, table, expected_result):
         ("author1", ValueError),
         ("empty_table1", ValueError),
         (None, ValueError),
-    ]
+    ],
 )
 def test_is_table_exists(ip, table, expected_error):
     if expected_error:
@@ -153,8 +153,8 @@ def test_is_table_exists(ip, table, expected_error):
         ("number_table", None, []),
         ("number_tale", ValueError, ["number_table"]),
         ("_table", ValueError, ["number_table", "empty_table"]),
-        (None, ValueError, [])
-    ]
+        (None, ValueError, []),
+    ],
 )
 def test_is_table_exists_with(ip, table, expected_error, expected_suggestions):
     with_ = ["temp"]
@@ -184,7 +184,7 @@ def test_is_table_exists_with(ip, table, expected_error, expected_suggestions):
 
 
 def test_get_list_of_existing_tables(ip):
-    expected = ['author', 'empty_table', 'number_table', 'test', 'website']
+    expected = ["author", "empty_table", "number_table", "test", "website"]
     list_of_tables = util._get_list_of_existing_tables()
     for table in expected:
         assert table in list_of_tables

@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.7.0dev
+* [Fix] Clearer error when using bad table/schema name with `%sqlcmd` and `%sqlplot` (#155)
 * [Feature] Adds `%sqlcmd profile` (#66)
 * [API Change] Deprecates old SQL parametrization: `$var`, `:var`, and `{var}` in favor of `{{var}}`
 * [Fix] `--save` + `--with` double quotes syntax error in MySQL ([#145](https://github.com/ploomber/jupysql/issues/145))

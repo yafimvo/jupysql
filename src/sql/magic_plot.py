@@ -69,7 +69,6 @@ class SqlPlotMagic(Magics, Configurable):
             )
 
         if cmd.args.line[0] in {"box", "boxplot"}:
-
             util.is_table_exists(cmd.args.table, with_=cmd.args.with_)
 
             return plot.boxplot(
@@ -80,7 +79,6 @@ class SqlPlotMagic(Magics, Configurable):
                 conn=None,
             )
         elif cmd.args.line[0] in {"hist", "histogram"}:
-
             util.is_table_exists(cmd.args.table, with_=cmd.args.with_)
 
             return plot.histogram(
