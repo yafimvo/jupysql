@@ -62,6 +62,8 @@ def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
         else:
             raise ValueError("Table cannot be None")
 
+    table = strip_multiple_chars(table, "\"\'")
+
     if schema:
         table_ = f"{schema}.{table}"
     else:
@@ -69,9 +71,10 @@ def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
 
     _is_exist = False
     try:
-        query = f"SELECT * FROM {table_} WHERE 1=0"
+        query = f'SELECT * FROM "{table_}" WHERE 1=0'
         if with_:
             query = str(store.render(query, with_=with_))
+        query = sql.connection.Connection._transpile_query(query)
         sql.run.raw_run(Connection.current, query)
         _is_exist = True
     except Exception:
@@ -132,3 +135,7 @@ def pretty_print(obj, delimiter=",", last_delimiter="and", repr_=False) -> str:
         sorted_[-1] = f"{last_delimiter} {sorted_[-1]}"
 
     return f"{delimiter} ".join(sorted_)
+
+
+def strip_multiple_chars(s, chars):
+    return s.translate(str.maketrans("", "", chars))
