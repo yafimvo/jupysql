@@ -142,24 +142,20 @@ def _is_table_exists(table, with_) -> bool:
     """
     Runs a SQL query to check if table exists
     """
-    query = f'SELECT * FROM {table} WHERE 1=0'
-    if with_:
-        query = str(store.render(query, with_=with_))
+    identifiers = identifiers = ["", '"', "`", ("[", "]")]
 
-    try:
-        query = sql.connection.Connection._transpile_query(query)
-        sql.run.raw_run(Connection.current, query)
-        return True
-    except Exception:
-        pass
+    for iden in identifiers:
+        if isinstance(iden, tuple):
+            query = 'SELECT * FROM {0}{1}{2} WHERE 1=0'.format(iden[0], table, iden[1])
+        else:
+            query = 'SELECT * FROM {0}{1}{0} WHERE 1=0'.format(iden, table)
+        try:
+            if with_:
+                query = str(store.render(query, with_=with_))
+            query = sql.connection.Connection._transpile_query(query)
+            sql.run.raw_run(Connection.current, query)
+            return True
+        except Exception as e:
+            pass
 
-    query = f'SELECT * FROM "{table}" WHERE 1=0'
-    if with_:
-        query = str(store.render(query, with_=with_))
-
-    try:
-        query = sql.connection.Connection._transpile_query(query)
-        sql.run.raw_run(Connection.current, query)
-        return True
-    except Exception:
-        return False
+    return False
