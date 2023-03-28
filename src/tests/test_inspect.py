@@ -21,18 +21,12 @@ def sample_db(tmp_empty):
     conn.session.execute("ATTACH DATABASE 'my.db' AS schema")
 
 
-def test_get_schema_names_no_conn():
-    with pytest.raises(RuntimeError) as error:
-        inspect.get_schema_names()
-
-    assert "No active connection" in str(error.value)
-
-
 @pytest.mark.parametrize(
     "function",
     [
         inspect.get_table_names,
         partial(inspect.get_columns, name="some_name"),
+        inspect.get_schema_names
     ],
 )
 def test_no_active_session(function, monkeypatch):
