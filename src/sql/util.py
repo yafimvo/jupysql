@@ -131,8 +131,11 @@ def pretty_print(obj, delimiter=",", last_delimiter="and", repr_=False) -> str:
     return f"{delimiter} ".join(sorted_)
 
 
-def strip_multiple_chars(s, chars):
-    return s.translate(str.maketrans("", "", chars))
+def strip_multiple_chars(string, chars) -> str:
+    """
+    Trims characters from the start and end of the string
+    """
+    return string.translate(str.maketrans("", "", chars))
 
 
 def _is_table_exists(table, with_) -> bool:
