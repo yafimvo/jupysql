@@ -142,7 +142,8 @@ def _is_table_exists(table, with_) -> bool:
     """
     Runs a SQL query to check if table exists
     """
-    identifiers = identifiers = ["", '"', "`", ("[", "]")]
+
+    identifiers = Connection.get_curr_identifiers()
 
     for iden in identifiers:
         if isinstance(iden, tuple):
@@ -155,7 +156,7 @@ def _is_table_exists(table, with_) -> bool:
             query = sql.connection.Connection._transpile_query(query)
             sql.run.raw_run(Connection.current, query)
             return True
-        except Exception as e:
+        except Exception:
             pass
 
     return False
