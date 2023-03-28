@@ -382,7 +382,7 @@ class Connection:
         """
         Returns identifiers for current connection
         """
-        identifiers = []
+        identifiers = ["", '"']
         try:
             connection_info = cls._get_curr_connection_info()
             cur_dialect = connection_info["dialect"]
