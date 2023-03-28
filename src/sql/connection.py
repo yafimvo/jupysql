@@ -378,16 +378,21 @@ class Connection:
             return query
 
     @classmethod
-    def get_curr_identifiers(cls):
+    def get_curr_identifiers(cls) -> list:
         """
-        Returns identifiers for current connection
+        Returns list of identifiers for current connection
+
+        Default identifiers are : ["", '"']
         """
         identifiers = ["", '"']
         try:
             connection_info = cls._get_curr_connection_info()
-            cur_dialect = connection_info["dialect"]
-            identifiers = sqlglot.Dialect.get_or_raise(
-                cur_dialect).Tokenizer.IDENTIFIERS
+            if connection_info:
+                cur_dialect = connection_info["dialect"]
+                identifiers_ = sqlglot.Dialect.get_or_raise(
+                    cur_dialect).Tokenizer.IDENTIFIERS
+
+                identifiers = [*set(identifiers + identifiers_)]
         except ValueError:
             pass
 
