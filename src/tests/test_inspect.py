@@ -21,6 +21,13 @@ def sample_db(tmp_empty):
     conn.session.execute("ATTACH DATABASE 'my.db' AS schema")
 
 
+def test_get_schema_names_no_conn():
+    with pytest.raises(RuntimeError) as error:
+        inspect.get_schema_names()
+
+    assert "No active connection" in str(error.value)
+
+
 @pytest.mark.parametrize(
     "function",
     [
@@ -126,10 +133,3 @@ ATTACH DATABASE 'my.db' AS test_schema
     schema_names = inspect.get_schema_names()
     for schema in schema_names:
         assert schema in expected_schema_names
-
-
-def test_get_schema_names_no_conn():
-    with pytest.raises(RuntimeError) as error:
-        inspect.get_schema_names()
-
-    assert "No active connection" in str(error.value)
