@@ -38,7 +38,9 @@ def _is_long_number(num) -> bool:
     return False
 
 
-def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
+def is_table_exists(
+    table: str, schema: str = None, ignore_error: bool = False, with_: str = None
+) -> bool:
     """
     Checks if a given table exists for a given connection
 
@@ -62,7 +64,7 @@ def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
         else:
             raise ValueError("Table cannot be None")
 
-    table = strip_multiple_chars(table, "\"\'")
+    table = strip_multiple_chars(table, "\"'")
 
     if schema:
         table_ = f"{schema}.{table}"
@@ -96,7 +98,8 @@ def is_table_exists(table, schema=None, ignore_error=False, with_=None) -> bool:
 
             if len(suggestions) > 0:
                 _suggestions_string = pretty_print(suggestions, last_delimiter="or")
-                err_message += f"\nDid you mean : {_suggestions_string}"
+                suggestions_message = f"\nDid you mean : {_suggestions_string}"
+                err_message = f"{err_message}{suggestions_message}"
 
             raise ValueError(err_message)
 
@@ -116,7 +119,9 @@ def _get_list_of_existing_tables() -> list:
     return tables
 
 
-def pretty_print(obj, delimiter=",", last_delimiter="and", repr_=False) -> str:
+def pretty_print(
+    obj: list, delimiter: str = ",", last_delimiter: str = "and", repr_: bool = False
+) -> str:
     """
     Returns a formatted string representation of an array
     """
@@ -131,14 +136,14 @@ def pretty_print(obj, delimiter=",", last_delimiter="and", repr_=False) -> str:
     return f"{delimiter} ".join(sorted_)
 
 
-def strip_multiple_chars(string, chars) -> str:
+def strip_multiple_chars(string: str, chars: str) -> str:
     """
     Trims characters from the start and end of the string
     """
     return string.translate(str.maketrans("", "", chars))
 
 
-def _is_table_exists(table, with_) -> bool:
+def _is_table_exists(table: str, with_: str) -> bool:
     """
     Runs a SQL query to check if table exists
     """
@@ -147,9 +152,9 @@ def _is_table_exists(table, with_) -> bool:
 
     for iden in identifiers:
         if isinstance(iden, tuple):
-            query = 'SELECT * FROM {0}{1}{2} WHERE 1=0'.format(iden[0], table, iden[1])
+            query = "SELECT * FROM {0}{1}{2} WHERE 1=0".format(iden[0], table, iden[1])
         else:
-            query = 'SELECT * FROM {0}{1}{0} WHERE 1=0'.format(iden, table)
+            query = "SELECT * FROM {0}{1}{0} WHERE 1=0".format(iden, table)
         try:
             if with_:
                 query = str(store.render(query, with_=with_))
