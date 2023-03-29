@@ -1,6 +1,13 @@
 import pytest
 from sql import util
 
+ERROR_MESSAGE = "Table cannot be None"
+EXPECTED_SUGGESTIONS_MESSAGE = "Did you mean :"
+EXPECTED_NO_TABLE_IN_DEFAULT_SCHEMA = (
+    "There is no table with name {0!r} in the default schema"
+)
+EXPECTED_NO_TABLE_IN_SCHEMA = "There is no table with name {0!r} in schema {1!r}"
+
 
 @pytest.mark.parametrize(
     "table, query, suggestions",
@@ -18,15 +25,13 @@ from sql import util
 def test_bad_table_error_message(ip, table, query, suggestions):
     query = query.format(table)
     out = ip.run_cell(query)
-    expected_error_message = (
-        f"There is no table with name {table!r} in the default schema"
-    )
+    expected_error_message = EXPECTED_NO_TABLE_IN_DEFAULT_SCHEMA.format(table)
 
     error_message = str(out.error_in_exec)
     assert isinstance(out.error_in_exec, ValueError)
     assert str(expected_error_message).lower() in error_message.lower()
 
-    error_suggestions_arr = error_message.split("Did you mean")
+    error_suggestions_arr = error_message.split(EXPECTED_SUGGESTIONS_MESSAGE)
 
     if len(suggestions) > 0:
         assert len(error_suggestions_arr) > 1
@@ -77,9 +82,8 @@ def test_bad_table_error_message(ip, table, query, suggestions):
 )
 def test_bad_table_error_message_with_schema(ip, query, suggestions, table, schema):
     query = query.format(table, schema)
-    expected_error_message = (
-        f"There is no table with name '{table}' in schema '{schema}'"
-    )
+
+    expected_error_message = EXPECTED_NO_TABLE_IN_SCHEMA.format(table, schema)
 
     ip.run_cell(
         """%%sql sqlite:///my.db
@@ -99,7 +103,7 @@ ATTACH DATABASE 'my.db' AS test_schema
     assert isinstance(out.error_in_exec, ValueError)
     assert str(expected_error_message).lower() in error_message.lower()
 
-    error_suggestions_arr = error_message.split("Did you mean")
+    error_suggestions_arr = error_message.split(EXPECTED_SUGGESTIONS_MESSAGE)
 
     if len(suggestions) > 0:
         assert len(error_suggestions_arr) > 1
@@ -171,7 +175,7 @@ def test_is_table_exists_with(ip, table, expected_error, expected_suggestions):
         with pytest.raises(expected_error) as error:
             util.is_table_exists(table, with_=with_)
 
-        error_suggestions_arr = str(error.value).split("Did you mean")
+        error_suggestions_arr = str(error.value).split(EXPECTED_SUGGESTIONS_MESSAGE)
 
         if len(expected_suggestions) > 0:
             assert len(error_suggestions_arr) > 1
