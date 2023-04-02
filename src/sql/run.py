@@ -355,7 +355,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos : pos + size]
+                yield source_list[pos: pos + size]
                 pos += size
 
         self.fetchmany = fetchmany
@@ -474,8 +474,11 @@ def run(conn, sql, config):
     return select_df_type(resultset, config)
 
 
-def raw_run(conn, sql):
-    return conn.session.execute(sql)
+def raw_run(conn, query):
+    try:
+        return conn.session.execute(query)
+    except Exception:
+        return sql.connection.Connection.run_query_on_custom_engine(query)
 
 
 class PrettyTable(prettytable.PrettyTable):

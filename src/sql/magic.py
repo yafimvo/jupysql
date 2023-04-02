@@ -219,6 +219,11 @@ class SqlMagic(Magics, Configurable):
         action="append",
         help="Interactive mode",
     )
+    @argument(
+        "--custom-engine",
+        action="store_true",
+        help=("Use custom engine"),
+    )
     def execute(self, line="", cell="", local_ns=None):
         """
         Runs SQL statement against a database, specified by
@@ -283,6 +288,12 @@ class SqlMagic(Magics, Configurable):
         # args.line: contains the line after the magic with all options removed
 
         args = command.args
+
+        if args.custom_engine:
+            return sql.connection.Connection.run_query_on_custom_engine(
+                command.sql
+            ).fetchall()
+
         # Create the interactive slider
         if args.interact and not is_interactive_mode:
             check_installed(["ipywidgets"], "--interactive argument")

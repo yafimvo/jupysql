@@ -59,6 +59,19 @@ def ip_empty():
 
 
 @pytest.fixture
+def custom_ip(ip_empty):
+    """Provides an IPython session in which tables have been created"""
+    runsql(
+        ip_empty,
+        [
+            "CREATE TABLE test (n INT, name TEXT)",
+        ],
+    )
+    yield ip_empty
+    runsql(ip_empty, "DROP TABLE test")
+
+
+@pytest.fixture
 def ip(ip_empty):
     """Provides an IPython session in which tables have been created"""
 

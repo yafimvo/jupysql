@@ -376,3 +376,32 @@ class Connection:
             query = sqlglot.parse_one(query).sql(dialect=write_dialect)
         finally:
             return query
+
+    @classmethod
+    def run_query_on_custom_engine(self, query):
+        """
+        Runs query on a custom engine (no sqlalchemy)
+        """
+        engine = _get_hardcoded_custom_engine()
+        cur = engine.cursor()
+        cur.execute(query)
+        return cur
+
+    @classmethod
+    def get_columns_from_custom_engine(self, table):
+        """
+        Returns column names for a given connection (no sqlalchemy)
+        """
+        # engine = _get_hardcoded_custom_engine()
+        cur = self.run_query_on_custom_engine(f"SELECT * FROM {table} WHERE 1=0")
+        col_names = [i[0] for i in cur.description]
+        return col_names
+
+
+def _get_hardcoded_custom_engine():
+    # hardcoded connection to questdb
+
+    import psycopg2 as pg
+    engine = pg.connect(
+        "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'")
+    return engine
