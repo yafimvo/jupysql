@@ -423,6 +423,8 @@ def _get_hardcoded_custom_engine():
     # hardcoded connection to questdb
 
     import psycopg2 as pg
+
     engine = pg.connect(
-        "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'")
+        "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
+    )
     return engine
