@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.7.0dev
+* [Doc] Algolia search added (#64)
 * [Fix] Clearer error when using bad table/schema name with `%sqlcmd` and `%sqlplot` (#155)
 * [Fix] Fix `%sqlcmd` exception handling (#262)
 * [Doc] Tutorial on ETLs via Jupysql and Github actions
