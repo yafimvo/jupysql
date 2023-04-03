@@ -1,0 +1,21 @@
+/* Override default css */
+
+.search-button__wrapper.show .search-button__search-container {
+    top: 10%;
+}
+
+.algolia-autocomplete {
+    width: 100%;
+}
+
+.bd-search .algolia-autocomplete.algolia-autocomplete-right .ds-dropdown-menu {
+    left: 0 !important;
+}
+
+.algolia-autocomplete.algolia-autocomplete-right .ds-dropdown-menu:before {
+    left: 48px;
+}
+
+.algolia-autocomplete .ds-dropdown-menu {
+    left: 0 !important;
+}

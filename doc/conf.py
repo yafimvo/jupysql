@@ -94,3 +94,21 @@ pygments_style = "sphinx"
 suppress_warnings = ["misc.highlighting_failure"]
 use_jupyterbook_latex = True
 use_multitoc_numbering = True
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory.
+html_static_path = ['_static']
+
+# Load custom stylesheets to support Algolia search.
+html_css_files = [
+    'algolia.css',
+    'https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.css'
+]
+
+# Load custom javascript to support Algolia search. Note that the sequence
+# defined below (external first) is intentional!
+html_js_files = [
+    ('https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js',
+     {'defer': 'defer'}),
+    ('algolia.js', {'defer': 'defer'})
+]
