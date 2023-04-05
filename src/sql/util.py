@@ -94,12 +94,19 @@ def is_table_exists(
                     f"There is no table with name {table!r} in the default schema"
                 )
 
-            suggestions = difflib.get_close_matches(invalid_input, expected)
+            if table in list(store):
+                suggestion_message = (
+                    ", but there is a stored query."
+                    f"\nDid you miss passing --with {table}?"
+                )
+                err_message = f"{err_message}{suggestion_message}"
+            else:
+                suggestions = difflib.get_close_matches(invalid_input, expected)
 
-            if len(suggestions) > 0:
-                _suggestions_string = pretty_print(suggestions, last_delimiter="or")
-                suggestions_message = f"\nDid you mean : {_suggestions_string}"
-                err_message = f"{err_message}{suggestions_message}"
+                if len(suggestions) > 0:
+                    _suggestions_string = pretty_print(suggestions, last_delimiter="or")
+                    suggestions_message = f"\nDid you mean : {_suggestions_string}"
+                    err_message = f"{err_message}{suggestions_message}"
 
             raise ValueError(err_message)
 
