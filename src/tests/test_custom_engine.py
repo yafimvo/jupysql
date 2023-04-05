@@ -100,6 +100,7 @@ def test_sql(ip_empty, questdb_engine, query, expected_results):
     for i, row in enumerate(resultSet):
         assert row == expected_results[i]
 
+
 # TEST %sqlcmd
 
 
