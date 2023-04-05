@@ -41,6 +41,33 @@ def test_missing_with(ip, store_table, query):
 
 
 @pytest.mark.parametrize(
+    "store_table, query",
+    [
+        ("a", "%sqlcmd columns --table {} --with {}"),
+        ("bbb", "%sqlcmd profile --table {} --with {}"),
+        ("c_c", "%sqlplot histogram --table {} --with {} --column x"),
+        ("d_d_d", "%sqlplot boxplot --table {} --with {} --column x"),
+    ],
+)
+def test_no_errors_with_stored_query(ip, store_table, query):
+    ip.run_cell(
+        f"""
+        %%sql --save {store_table} --no-execute
+        SELECT *
+        FROM number_table
+        """
+    ).result
+
+    query = query.format(store_table, store_table)
+    out = ip.run_cell(query)
+
+    expected_store_message = EXPECTED_STORE_SUGGESTIONS.format(store_table)
+    error_message = str(out.error_in_exec)
+    assert not isinstance(out.error_in_exec, ValueError)
+    assert str(expected_store_message).lower() not in error_message.lower()
+
+
+@pytest.mark.parametrize(
     "table, query, suggestions",
     [
         ("tes", "%sqlcmd columns --table {}", ["test"]),
