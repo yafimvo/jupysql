@@ -297,11 +297,6 @@ class SqlMagic(Magics, Configurable):
 
         args = command.args
 
-        if args.custom_engine:
-            return sql.connection.Connection.run_query_on_custom_engine(
-                command.sql
-            ).fetchall()
-
         # Create the interactive slider
         if args.interact and not is_interactive_mode:
             check_installed(["ipywidgets"], "--interactive argument")

@@ -267,10 +267,14 @@ class Connection:
         connect_args = connect_args or {}
 
         if descriptor:
+            is_custom_connection_ = Connection.is_custom_connection(descriptor)
+
             if isinstance(descriptor, Connection):
                 cls.current = descriptor
             elif isinstance(descriptor, Engine):
                 cls.current = Connection(descriptor)
+            elif is_custom_connection_:
+                cls.current = CustomConnection(descriptor, alias=alias)
             else:
                 existing = rough_dict_get(cls.connections, descriptor)
 
@@ -316,7 +320,11 @@ class Connection:
         result = []
         for key in sorted(cls.connections):
             conn = cls.connections[key]
-            engine_url = conn.metadata.bind.url if IS_SQLALCHEMY_ONE else conn.url
+
+            if cls.is_custom_connection(conn):
+                engine_url = conn.url
+            else:
+                engine_url = conn.metadata.bind.url if IS_SQLALCHEMY_ONE else conn.url
 
             prefix = "* " if conn == cls.current else "  "
 
@@ -357,7 +365,10 @@ class Connection:
         if not cls.current:
             return None
 
-        engine = cls.current.metadata.bind if IS_SQLALCHEMY_ONE else cls.current
+        try:
+            engine = cls.current.metadata.bind if IS_SQLALCHEMY_ONE else cls.current
+        except Exception:
+            engine = cls.current
         return {
             "dialect": getattr(engine.dialect, "name", None),
             "driver": getattr(engine.dialect, "driver", None),
@@ -396,35 +407,56 @@ class Connection:
                 identifiers = [*set(identifiers + identifiers_)]
         except ValueError:
             pass
+        except AttributeError:
+            # this might be a custom connection..
+            pass
 
         return identifiers
 
-    def run_query_on_custom_engine(self, query):
-        """
-        Runs query on a custom engine (no sqlalchemy)
-        """
-        engine = _get_hardcoded_custom_engine()
-        cur = engine.cursor()
+    @classmethod
+    def is_custom_connection(self, conn):
+        is_custom_connection_ = False
+        if conn is not None:
+            if isinstance(conn, CustomConnection):
+                is_custom_connection_ = True
+            else:
+                # TODO: Better check when user passes a custom
+                # connection
+                is_custom_connection_ = conn.__class__.__name__ == "connection"
+        return is_custom_connection_
+
+
+class CustomSession(sqlalchemy.engine.base.Connection):
+    """
+    Custom sql alchemy session
+    """
+
+    def __init__(self, engine):
+        self.engine = engine
+
+    def execute(self, query):
+        cur = self.engine.cursor()
         cur.execute(query)
         return cur
 
-    @classmethod
-    def get_columns_from_custom_engine(self, table):
-        """
-        Returns column names for a given connection (no sqlalchemy)
-        """
-        # engine = _get_hardcoded_custom_engine()
-        cur = self.run_query_on_custom_engine(f"SELECT * FROM {table} WHERE 1=0")
-        col_names = [i[0] for i in cur.description]
-        return col_names
 
+class CustomConnection(Connection):
+    """
+    Custom connection for unsupported drivers in sqlalchemy
+    """
 
-def _get_hardcoded_custom_engine():
-    # hardcoded connection to questdb
+    def __init__(self, engine, alias=None):
+        connection_name_ = "custom_driver"
+        self.url = str(engine)
+        self.name = connection_name_
+        self.dialect = connection_name_
+        self.session = CustomSession(engine)
 
-    import psycopg2 as pg
+        # if IS_SQLALCHEMY_ONE:
+        #     self.metadata = sqlalchemy.MetaData(bind=engine)
 
-    engine = pg.connect(
-        "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
-    )
-    return engine
+        self.connections[alias or connection_name_] = self
+
+        self.connect_args = None
+        self.alias = alias
+        Connection.current = self

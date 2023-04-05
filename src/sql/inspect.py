@@ -6,6 +6,7 @@ from sql.telemetry import telemetry
 import sql.run
 import math
 from sql import util
+from sqlalchemy.engine.cursor import LegacyCursorResult
 
 
 def _get_inspector(conn):
@@ -100,10 +101,14 @@ class TableDescription(DatabaseInspection):
         if schema:
             table_name = f"{schema}.{table_name}"
 
-        # columns = sql.run.raw_run(
-        #     Connection.current, f"SELECT * FROM {table_name} WHERE 1=0"
-        # ).keys()
-        columns = Connection.get_columns_from_custom_engine(table_name)
+        columns_query_result = sql.run.raw_run(
+            Connection.current, f"SELECT * FROM {table_name} WHERE 1=0"
+        )
+
+        if isinstance(columns_query_result, LegacyCursorResult):
+            columns = columns_query_result.keys()
+        else:
+            columns = [i[0] for i in columns_query_result.description]
 
         table_stats = dict({})
         columns_to_include_in_report = set()
@@ -151,12 +156,13 @@ class TableDescription(DatabaseInspection):
                 pass
 
             try:
-                # get all non None values, min, max and avg.
+                # get unique values
                 result_value_values = sql.run.raw_run(
                     Connection.current,
                     f"""
                     SELECT
-                    COUNT(DISTINCT {column}) AS unique_count,
+                    COUNT(DISTINCT {column}) AS unique_count
+                    FROM {table_name}
                     WHERE {column} IS NOT NULL
                     """,
                 ).fetchall()
@@ -164,7 +170,8 @@ class TableDescription(DatabaseInspection):
 
                 columns_to_include_in_report.update(["unique"])
 
-            except Exception:
+            except Exception as e:
+                print("e : ", e)
                 pass
 
             try:

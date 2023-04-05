@@ -21,6 +21,7 @@ except ImportError:
 from sql.telemetry import telemetry
 import logging
 import warnings
+from sqlalchemy.engine.cursor import LegacyCursorResult
 
 
 def unduplicate_field_names(field_names):
@@ -107,8 +108,20 @@ class ResultSet(list, ColumnGuesserMixin):
     def __init__(self, sqlaproxy, config):
         self.config = config
         self.keys = {}
-        if sqlaproxy.returns_rows:
-            self.keys = sqlaproxy.keys()
+
+        is_sql_alchemy_results = isinstance(sqlaproxy, LegacyCursorResult)
+
+        if is_sql_alchemy_results:
+            has_results = sqlaproxy.returns_rows
+        else:
+            has_results = sqlaproxy.rowcount
+
+        if has_results:
+            if is_sql_alchemy_results:
+                self.keys = sqlaproxy.keys()
+            else:
+                self.keys = [i[0] for i in sqlaproxy.description]
+
             if isinstance(config.autolimit, int) and config.autolimit > 0:
                 list.__init__(self, sqlaproxy.fetchmany(size=config.autolimit))
             else:
@@ -357,7 +370,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos : pos + size]
+                yield source_list[pos: pos + size]
                 pos += size
 
         self.fetchmany = fetchmany
@@ -467,7 +480,10 @@ def run(conn, sql, config):
         else:
             txt = sqlalchemy.sql.text(statement)
             manual_commit = set_autocommit(conn, config)
-            result = conn.session.execute(txt)
+            txt_ = str(txt)
+            # stringify txt to avoid TypeError:
+            # Boolean value of this clause is not defined
+            result = conn.session.execute(txt_)
         _commit(conn=conn, config=config, manual_commit=manual_commit)
         if result and config.feedback:
             print(interpret_rowcount(result.rowcount))
@@ -477,10 +493,7 @@ def run(conn, sql, config):
 
 
 def raw_run(conn, query):
-    try:
-        return conn.session.execute(query)
-    except Exception:
-        return sql.connection.Connection.run_query_on_custom_engine(query)
+    return conn.session.execute(query)
 
 
 class PrettyTable(prettytable.PrettyTable):

@@ -5,11 +5,28 @@ import math
 
 
 @pytest.fixture
-def penguins_no_nulls_questdb(custom_ip):
+def questdb_engine(ip_empty):
+    """
+    Creates a custom connection to
+    QuestDB which is not supported by SQLAlchemy
+    """
+    ip_empty.run_cell(
+        """
+        import psycopg2 as pg
+        engine = pg.connect(
+            "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
+        )
+        %sql engine
+        """
+    )
+
+
+@pytest.fixture
+def penguins_no_nulls_questdb(ip_empty, questdb_engine):
     # Assume we have a table called penguins.csv
     # in our questdb
 
-    custom_ip.run_cell(
+    ip_empty.run_cell(
         """
 %%sql --save no_nulls --no-execute
 SELECT *
@@ -46,8 +63,8 @@ def test_ggplot_histogram(penguins_no_nulls_questdb):
     extensions=["png"],
     remove_text=False,
 )
-def test_sqlplot_histogram(custom_ip, penguins_no_nulls_questdb):
-    custom_ip.run_cell(
+def test_sqlplot_histogram(ip_empty, penguins_no_nulls_questdb):
+    ip_empty.run_cell(
         """%sqlplot histogram --column bill_length_mm bill_depth_mm --table no_nulls --with no_nulls"""  # noqa
     )
 
@@ -78,10 +95,10 @@ def test_sqlplot_histogram(custom_ip, penguins_no_nulls_questdb):
         ),
     ],
 )
-def test_sql(custom_ip, query, expected_results):
-    out = custom_ip.run_cell(f"%sql {query} --custom-engine").result
-    assert str(expected_results) == str(out)
-
+def test_sql(ip_empty, questdb_engine, query, expected_results):
+    resultSet = ip_empty.run_cell(f"%sql {query}").result
+    for i, row in enumerate(resultSet):
+        assert row == expected_results[i]
 
 # TEST %sqlcmd
 
@@ -107,8 +124,8 @@ def test_sql(custom_ip, query, expected_results):
         },
     ],
 )
-def test_sqlcmd_profile(custom_ip, expected):
-    out = custom_ip.run_cell("%sqlcmd profile --table penguins.csv").result
+def test_sqlcmd_profile(ip_empty, questdb_engine, expected):
+    out = ip_empty.run_cell("%sqlcmd profile --table penguins.csv").result
 
     stats_table = out._table
 

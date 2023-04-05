@@ -283,7 +283,7 @@ FROM "{{table}}"
     if with_:
         query = str(store.render(query, with_=with_))
     query = sql.connection.Connection._transpile_query(query)
-    min_, max_ = sql.connection.Connection.run_query_on_custom_engine(query).fetchone()
+    min_, max_ = con.execute(query).fetchone()
     return min_, max_
 
 
@@ -476,8 +476,8 @@ def histogram(
 @modify_exceptions
 def _histogram(table, column, bins, with_=None, conn=None, facet=None):
     """Compute bins and heights"""
-    # if not conn:
-    #     conn = sql.connection.Connection.current.session
+    if not conn:
+        conn = sql.connection.Connection.current.session
 
     # FIXME: we're computing all the with elements twice
     min_, max_ = _min_max(conn, table, column, with_=with_)
@@ -526,7 +526,7 @@ def _histogram(table, column, bins, with_=None, conn=None, facet=None):
         query = str(store.render(query, with_=with_))
 
     query = sql.connection.Connection._transpile_query(query)
-    data = sql.connection.Connection.run_query_on_custom_engine(query).fetchall()
+    data = conn.execute(query).fetchall()
     bin_, height = zip(*data)
 
     if bin_[0] is None:
