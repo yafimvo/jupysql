@@ -163,7 +163,8 @@ def _is_table_exists(table: str, with_: str) -> bool:
         for iden in identifiers:
             if isinstance(iden, tuple):
                 query = "SELECT * FROM {0}{1}{2} WHERE 1=0".format(
-                    iden[0], table, iden[1])
+                    iden[0], table, iden[1]
+                )
             else:
                 query = "SELECT * FROM {0}{1}{0} WHERE 1=0".format(iden, table)
             try:
