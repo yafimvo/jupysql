@@ -289,7 +289,12 @@ FROM "{{table}}"
     if with_:
         query = str(store.render(query, with_=with_))
     query = sql.connection.Connection._transpile_query(query)
-    min_, max_ = con.execute(sqlalchemy.sql.text(query)).fetchone()
+    if sql.connection.Connection.is_custom_connection(con):
+        query = str(query)
+    else:
+        query = sqlalchemy.sql.text(query)
+
+    min_, max_ = con.execute(query).fetchone()
     return min_, max_
 
 
@@ -546,7 +551,13 @@ def _histogram(table, column, bins, with_=None, conn=None, facet=None):
         query = str(store.render(query, with_=with_))
 
     query = sql.connection.Connection._transpile_query(query)
-    data = conn.execute(sqlalchemy.sql.text(query)).fetchall()
+    if sql.connection.Connection.is_custom_connection(conn):
+        query = str(query)
+    else:
+        query = sqlalchemy.sql.text(query)
+
+    data = conn.execute(query).fetchall()
+
     bin_, height = zip(*data)
 
     if bin_[0] is None:

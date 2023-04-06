@@ -227,11 +227,6 @@ class SqlMagic(Magics, Configurable):
         action="append",
         help="Interactive mode",
     )
-    @argument(
-        "--custom-engine",
-        action="store_true",
-        help=("Use custom engine"),
-    )
     def execute(self, line="", cell="", local_ns=None):
         """
         Runs SQL statement against a database, specified by

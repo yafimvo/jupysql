@@ -465,10 +465,13 @@ class Connection:
         return identifiers
 
     @classmethod
-    def is_custom_connection(self, conn):
+    def is_custom_connection(self, conn) -> bool:
+        """
+        Checks if given connection is custom
+        """
         is_custom_connection_ = False
         if conn is not None:
-            if isinstance(conn, CustomConnection):
+            if isinstance(conn, (CustomConnection, CustomSession)):
                 is_custom_connection_ = True
             else:
                 # TODO: Better check when user passes a custom

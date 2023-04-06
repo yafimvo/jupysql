@@ -3,7 +3,13 @@ from sql.ggplot import ggplot, aes, geom_histogram
 from matplotlib.testing.decorators import image_comparison, cleanup
 import math
 
+# TODO: Include these test in CI
+# TODO: Remove this skip
+SKIP_CI = True
+SKIP_REASON_NO_ENGINE = "Didn't setup quest db on CI"
 
+
+@pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @pytest.fixture
 def questdb_engine(ip_empty):
     """
@@ -21,6 +27,7 @@ def questdb_engine(ip_empty):
     )
 
 
+@pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @pytest.fixture
 def penguins_no_nulls_questdb(ip_empty, questdb_engine):
     # Assume we have a table called penguins.csv
@@ -39,7 +46,7 @@ sex IS NOT NULL
 
 # TEST %sqlplot and ggplot api
 
-
+@pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @cleanup
 @image_comparison(
     baseline_images=["custom_engine_histogram"],
@@ -57,6 +64,7 @@ def test_ggplot_histogram(penguins_no_nulls_questdb):
     )
 
 
+@pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @cleanup
 @image_comparison(
     baseline_images=["custom_engine_histogram"],
@@ -71,7 +79,7 @@ def test_sqlplot_histogram(ip_empty, penguins_no_nulls_questdb):
 
 # TEST %sql
 
-
+@pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @pytest.mark.parametrize(
     "query, expected_results",
     [
@@ -102,8 +110,7 @@ def test_sql(ip_empty, questdb_engine, query, expected_results):
 
 
 # TEST %sqlcmd
-
-
+@pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @pytest.mark.parametrize(
     "expected",
     [
