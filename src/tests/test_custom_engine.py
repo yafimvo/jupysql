@@ -46,6 +46,7 @@ sex IS NOT NULL
 
 # TEST %sqlplot and ggplot api
 
+
 @pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @cleanup
 @image_comparison(
@@ -78,6 +79,7 @@ def test_sqlplot_histogram(ip_empty, penguins_no_nulls_questdb):
 
 
 # TEST %sql
+
 
 @pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
 @pytest.mark.parametrize(
