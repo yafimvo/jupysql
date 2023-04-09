@@ -24,11 +24,6 @@ import logging
 import warnings
 from sql.connection import Connection
 
-try:
-    # sqlalchemy<2
-    from sqlalchemy.engine.cursor import LegacyCursorResult as CursorResult
-except ImportError:
-    from sqlalchemy.engine.cursor import CursorResult
 
 IS_SQLALCHEMY_ONE = int(sqlalchemy.__version__.split(".")[0]) == 1
 
@@ -118,7 +113,7 @@ class ResultSet(list, ColumnGuesserMixin):
         self.config = config
         self.keys = {}
 
-        is_sql_alchemy_results = isinstance(sqlaproxy, CursorResult)
+        is_sql_alchemy_results = not hasattr(sqlaproxy, "description")
 
         if is_sql_alchemy_results:
             has_results = sqlaproxy.returns_rows
