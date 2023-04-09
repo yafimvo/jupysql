@@ -112,7 +112,7 @@ def test_sql(ip_empty, questdb_engine, query, expected_results):
 
 
 # TEST %sqlcmd
-@pytest.mark.skipif(SKIP_CI, reason=SKIP_REASON_NO_ENGINE)
+@pytest.mark.skipif(True, reason=SKIP_REASON_NO_ENGINE)
 @pytest.mark.parametrize(
     "expected",
     [

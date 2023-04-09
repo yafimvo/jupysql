@@ -22,12 +22,15 @@ from sqlalchemy.orm import Session
 from sql.telemetry import telemetry
 import logging
 import warnings
+from sql.connection import Connection
 
 try:
     # sqlalchemy<2
     from sqlalchemy.engine.cursor import LegacyCursorResult as CursorResult
 except ImportError:
     from sqlalchemy.engine.cursor import CursorResult
+
+IS_SQLALCHEMY_ONE = int(sqlalchemy.__version__.split(".")[0]) == 1
 
 
 def unduplicate_field_names(field_names):
@@ -487,7 +490,12 @@ def run(conn, sql, config):
         else:
             txt = sqlalchemy.sql.text(statement)
             manual_commit = set_autocommit(conn, config)
-            txt_ = str(txt)
+
+            is_custom_connection = Connection.is_custom_connection(conn)
+            if IS_SQLALCHEMY_ONE or is_custom_connection:
+                txt_ = str(txt)
+            else:
+                txt_ = txt
             # stringify txt to avoid TypeError:
             # Boolean value of this clause is not defined
             result = conn.session.execute(txt_)
