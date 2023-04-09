@@ -6,7 +6,12 @@ from sql.telemetry import telemetry
 import sql.run
 import math
 from sql import util
-from sqlalchemy.engine.cursor import LegacyCursorResult
+
+try:
+    # sqlalchemy<2
+    from sqlalchemy.engine.cursor import LegacyCursorResult as CursorResult
+except ImportError:
+    from sqlalchemy.engine.cursor import CursorResult
 
 
 def _get_inspector(conn):
@@ -105,7 +110,7 @@ class TableDescription(DatabaseInspection):
             Connection.current, f"SELECT * FROM {table_name} WHERE 1=0"
         )
 
-        if isinstance(columns_query_result, LegacyCursorResult):
+        if isinstance(columns_query_result, CursorResult):
             columns = columns_query_result.keys()
         else:
             columns = [i[0] for i in columns_query_result.description]

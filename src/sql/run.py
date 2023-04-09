@@ -22,7 +22,11 @@ from sqlalchemy.orm import Session
 from sql.telemetry import telemetry
 import logging
 import warnings
-from sqlalchemy.engine.cursor import LegacyCursorResult
+try:
+    # sqlalchemy<2
+    from sqlalchemy.engine.cursor import LegacyCursorResult as CursorResult
+except ImportError:
+    from sqlalchemy.engine.cursor import CursorResult
 
 
 def unduplicate_field_names(field_names):
@@ -110,7 +114,7 @@ class ResultSet(list, ColumnGuesserMixin):
         self.config = config
         self.keys = {}
 
-        is_sql_alchemy_results = isinstance(sqlaproxy, LegacyCursorResult)
+        is_sql_alchemy_results = isinstance(sqlaproxy, CursorResult)
 
         if is_sql_alchemy_results:
             has_results = sqlaproxy.returns_rows
@@ -371,7 +375,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos : pos + size]
+                yield source_list[pos: pos + size]
                 pos += size
 
         self.fetchmany = fetchmany
