@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from sql.telemetry import telemetry
 import logging
 import warnings
+
 try:
     # sqlalchemy<2
     from sqlalchemy.engine.cursor import LegacyCursorResult as CursorResult
@@ -375,7 +376,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos: pos + size]
+                yield source_list[pos : pos + size]
                 pos += size
 
         self.fetchmany = fetchmany
