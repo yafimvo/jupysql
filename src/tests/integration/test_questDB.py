@@ -13,7 +13,7 @@ from sql.ggplot import ggplot, aes, geom_histogram
 from matplotlib.testing.decorators import image_comparison, cleanup
 
 """
-This test class includes all QuestDB-related tests and specifically focuses 
+This test class includes all QuestDB-related tests and specifically focuses
 on testing the custom engine initialization.
 
 TODO: We should generelize this test to handle different engines/connections.
@@ -121,12 +121,12 @@ def ip_questdb(penguins_data, ip_empty):
     with questdb_container():
         ip_empty.run_cell(
             """
-            import psycopg2 as pg
-            engine = pg.connect(
-                "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
-            )
-            %sql engine
-            """
+        import psycopg2 as pg
+        engine = pg.connect(
+            "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
+        )
+        %sql engine
+        """
         )
 
         # Load pre-defined datasets
