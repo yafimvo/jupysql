@@ -23,7 +23,7 @@ from sql.telemetry import telemetry
 import logging
 import warnings
 from sql.connection import Connection
-
+from collections.abc import Iterable
 
 IS_SQLALCHEMY_ONE = int(sqlalchemy.__version__.split(".")[0]) == 1
 
@@ -115,6 +115,9 @@ class ResultSet(list, ColumnGuesserMixin):
 
         is_sql_alchemy_results = not hasattr(sqlaproxy, "description")
 
+        list.__init__(self, [])
+        self.pretty = None
+
         if is_sql_alchemy_results:
             has_results = sqlaproxy.returns_rows
         else:
@@ -123,23 +126,23 @@ class ResultSet(list, ColumnGuesserMixin):
         if has_results:
             if is_sql_alchemy_results:
                 self.keys = sqlaproxy.keys()
-            else:
+            elif isinstance(sqlaproxy.description, Iterable):
                 self.keys = [i[0] for i in sqlaproxy.description]
-
-            if isinstance(config.autolimit, int) and config.autolimit > 0:
-                list.__init__(self, sqlaproxy.fetchmany(size=config.autolimit))
             else:
-                list.__init__(self, sqlaproxy.fetchall())
-            self.field_names = unduplicate_field_names(self.keys)
+                self.keys = []
 
-            _style = None
-            if isinstance(config.style, str):
-                _style = prettytable.__dict__[config.style.upper()]
+            if len(self.keys) > 0:
+                if isinstance(config.autolimit, int) and config.autolimit > 0:
+                    list.__init__(self, sqlaproxy.fetchmany(size=config.autolimit))
+                else:
+                    list.__init__(self, sqlaproxy.fetchall())
+                self.field_names = unduplicate_field_names(self.keys)
 
-            self.pretty = PrettyTable(self.field_names, style=_style)
-        else:
-            list.__init__(self, [])
-            self.pretty = None
+                _style = None
+                if isinstance(config.style, str):
+                    _style = prettytable.__dict__[config.style.upper()]
+
+                self.pretty = PrettyTable(self.field_names, style=_style)
 
     def _repr_html_(self):
         _cell_with_spaces_pattern = re.compile(r"(<td>)( {2,})")
