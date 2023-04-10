@@ -465,18 +465,24 @@ class Connection:
         return identifiers
 
     @classmethod
-    def is_custom_connection(self, conn) -> bool:
+    def is_custom_connection(self, conn=None) -> bool:
         """
         Checks if given connection is custom
         """
         is_custom_connection_ = False
-        if conn is not None:
-            if isinstance(conn, (CustomConnection, CustomSession)):
-                is_custom_connection_ = True
+
+        if conn is None:
+            if not Connection.current:
+                raise RuntimeError("No active connection")
             else:
-                # TODO: Better check when user passes a custom
-                # connection
-                is_custom_connection_ = conn.__class__.__name__ == "connection"
+                conn = Connection.current.session
+
+        if isinstance(conn, (CustomConnection, CustomSession)):
+            is_custom_connection_ = True
+        else:
+            # TODO: Better check when user passes a custom
+            # connection
+            is_custom_connection_ = conn.__class__.__name__ == "connection"
         return is_custom_connection_
 
 
@@ -505,9 +511,6 @@ class CustomConnection(Connection):
         self.name = connection_name_
         self.dialect = connection_name_
         self.session = CustomSession(engine)
-
-        # if IS_SQLALCHEMY_ONE:
-        #     self.metadata = sqlalchemy.MetaData(bind=engine)
 
         self.connections[alias or connection_name_] = self
 

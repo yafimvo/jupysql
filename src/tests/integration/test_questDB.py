@@ -3,12 +3,9 @@ import time
 from dockerctx import new_container
 from contextlib import contextmanager
 import pandas as pd
-
-
 import urllib.request
 import requests
 from pathlib import Path
-
 from sql.ggplot import ggplot, aes, geom_histogram
 from matplotlib.testing.decorators import image_comparison, cleanup
 
@@ -16,7 +13,7 @@ from matplotlib.testing.decorators import image_comparison, cleanup
 This test class includes all QuestDB-related tests and specifically focuses
 on testing the custom engine initialization.
 
-TODO: We should generelize this test to handle different engines/connections.
+TODO: We should generelize these tests to check different engines/connections.
 """
 
 
@@ -40,7 +37,8 @@ def import_data(file_name, table_name):
     """
     Loads csv file to questdb container
     """
-    query_url = "http://127.0.0.1:9000/imp"
+    url = "http://127.0.0.1:9000"
+    query_url = f"{url}/imp"
 
     df = pd.read_csv(file_name, sep=",")
     df.drop_duplicates(subset=None, inplace=True)
@@ -203,3 +201,22 @@ def test_sql(ip_questdb, query, expected_results):
     resultSet = ip_questdb.run_cell(f"%sql {query}").result
     for i, row in enumerate(resultSet):
         assert row == expected_results[i]
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        ("%sqlcmd profile --table penguins.csv"),
+        ("%sqlcmd tables"),
+        ("%sqlcmd tables --schema some_schema"),
+        ("%sqlcmd columns --table penguins.csv"),
+        ("%sqlcmd test"),
+        ("%sqlcmd test --table penguins.csv"),
+    ],
+)
+def test_sqlcmd_not_supported_error(ip_questdb, query):
+    expected_error_message = "%sqlcmd is not supported for a custom engine"
+    out = ip_questdb.run_cell(query)
+    error_message = str(out.error_in_exec)
+    assert isinstance(out.error_in_exec, AttributeError)
+    assert str(expected_error_message).lower() in error_message.lower()

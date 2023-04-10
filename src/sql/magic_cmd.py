@@ -40,6 +40,9 @@ class SqlCmdMagic(Magics, Configurable):
         Raises UsageError in case of an invalid input, executes command otherwise.
         """
 
+        if sql.connection.Connection.is_custom_connection():
+            raise AttributeError("%sqlcmd is not supported for a custom engine")
+
         AVAILABLE_SQLCMD_COMMANDS = ["tables", "columns", "test", "profile"]
 
         if line == "":
@@ -67,7 +70,6 @@ class SqlCmdMagic(Magics, Configurable):
         """
         Command
         """
-
         if cmd_name == "tables":
             parser = CmdParser()
 
