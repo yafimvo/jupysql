@@ -6,8 +6,8 @@ import pandas as pd
 import urllib.request
 import requests
 from pathlib import Path
-from sql.ggplot import ggplot, aes, geom_histogram
-from matplotlib.testing.decorators import image_comparison, cleanup
+from sql.ggplot import ggplot, aes, geom_histogram, facet_wrap
+from matplotlib.testing.decorators import image_comparison, _cleanup_cm
 
 """
 This test class includes all QuestDB-related tests and specifically focuses
@@ -27,6 +27,22 @@ def penguins_data(tmpdir):
     if not Path(file_path_str).is_file():
         urllib.request.urlretrieve(
             "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",  # noqa breaks the check-for-broken-links
+            file_path_str,
+        )
+
+    yield file_path_str
+
+
+@pytest.fixture
+def diamonds_data(tmpdir):
+    """
+    Downloads diamonds dataset
+    """
+    file_path_str = "diamonds.csv"
+
+    if not Path(file_path_str).is_file():
+        urllib.request.urlretrieve(
+            "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv",  # noqa breaks the check-for-broken-links
             file_path_str,
         )
 
@@ -112,7 +128,7 @@ def questdb_container(is_bypass_init=False):
 
 
 @pytest.fixture
-def ip_questdb(penguins_data, ip_empty):
+def ip_questdb(diamonds_data, penguins_data, ip_empty):
     """
     Initalizes questdb database container and loads it with data
     """
@@ -129,6 +145,7 @@ def ip_questdb(penguins_data, ip_empty):
 
         # Load pre-defined datasets
         import_data(penguins_data, "penguins.csv")
+        import_data(diamonds_data, "diamonds.csv")
         yield ip_empty
 
 
@@ -145,7 +162,10 @@ sex IS NOT NULL
     ).result
 
 
-@cleanup
+# ggplot and %sqlplot
+
+
+@_cleanup_cm()
 @image_comparison(
     baseline_images=["custom_engine_histogram"],
     extensions=["png"],
@@ -162,7 +182,24 @@ def test_ggplot_histogram(ip_questdb, penguins_no_nulls_questdb):
     )
 
 
-@cleanup
+@pytest.mark.parametrize(
+    "x",
+    [
+        "price",
+        ["price"],
+    ],
+)
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_stacked_default"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_example_histogram_stacked_default(ip_questdb, diamonds_data, x):
+    (ggplot(diamonds_data, aes(x=x)) + geom_histogram(bins=10, fill="cut"))
+
+
+@_cleanup_cm()
 @image_comparison(
     baseline_images=["custom_engine_histogram"],
     extensions=["png"],
@@ -172,6 +209,274 @@ def test_sqlplot_histogram(ip_questdb, penguins_no_nulls_questdb):
     ip_questdb.run_cell(
         """%sqlplot histogram --column bill_length_mm bill_depth_mm --table no_nulls --with no_nulls"""  # noqa
     )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_stacked_custom_cmap"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_example_histogram_stacked_custom_cmap(ip_questdb, diamonds_data):
+    (
+        ggplot(diamonds_data, aes(x="price"))
+        + geom_histogram(bins=10, fill="cut", cmap="plasma")
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_stacked_custom_color"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_example_histogram_stacked_custom_color(ip_questdb, diamonds_data):
+    (
+        ggplot(diamonds_data, aes(x="price", color="k"))
+        + geom_histogram(bins=10, cmap="plasma", fill="cut")
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_stacked_custom_color_and_fill"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_example_histogram_stacked_custom_color_and_fill(ip_questdb, diamonds_data):
+    (
+        ggplot(diamonds_data, aes(x="price", color="white", fill="red"))
+        + geom_histogram(bins=10, cmap="plasma", fill="cut")
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_stacked_custom_color_and_fill"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_ggplot_geom_histogram_fill_with_multi_color_warning(ip_questdb, diamonds_data):
+    with pytest.warns(UserWarning):
+        (
+            ggplot(diamonds_data, aes(x="price", color="white", fill=["red", "blue"]))
+            + geom_histogram(bins=10, cmap="plasma", fill="cut")
+        )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_stacked_large_bins"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_example_histogram_stacked_with_large_bins(ip_questdb, diamonds_data):
+    (ggplot(diamonds_data, aes(x="price")) + geom_histogram(bins=400, fill="cut"))
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_categorical"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_histogram(ip_questdb, diamonds_data):
+    (ggplot(diamonds_data, aes(x=["cut"])) + geom_histogram())
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_categorical_combined"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_histogram_combined(ip_questdb, diamonds_data):
+    (ggplot(diamonds_data, aes(x=["color", "carat"])) + geom_histogram(bins=10))
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined(ip_questdb, diamonds_data):
+    (ggplot(diamonds_data, aes(x=["color", "carat"])) + geom_histogram(bins=20))
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined_custom_fill"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined_custom_fill(
+    ip_questdb, diamonds_data
+):
+    (
+        ggplot(diamonds_data, aes(x=["color", "carat"], fill="red"))
+        + geom_histogram(bins=20)
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined_custom_multi_fill"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined_custom_multi_fill(
+    ip_questdb, diamonds_data
+):
+    (
+        ggplot(diamonds_data, aes(x=["color", "carat"], fill=["red", "blue"]))
+        + geom_histogram(bins=20)
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["histogram_numeric_categorical_combined_custom_multi_color"],
+    extensions=["png"],
+    remove_text=True,
+)
+def test_categorical_and_numeric_histogram_combined_custom_multi_color(
+    ip_questdb, diamonds_data
+):
+    (
+        ggplot(diamonds_data, aes(x=["color", "carat"], color=["green", "magenta"]))
+        + geom_histogram(bins=20)
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["facet_wrap_default"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_default(ip_questdb, penguins_no_nulls_questdb):
+    (
+        ggplot(table="no_nulls", with_="no_nulls", mapping=aes(x=["bill_depth_mm"]))
+        + geom_histogram(bins=10)
+        + facet_wrap("sex")
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["facet_wrap_default_no_legend"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_default_no_legend(ip_questdb, penguins_no_nulls_questdb):
+    (
+        ggplot(table="no_nulls", with_="no_nulls", mapping=aes(x=["bill_depth_mm"]))
+        + geom_histogram(bins=10)
+        + facet_wrap("sex", legend=False)
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["facet_wrap_custom_fill"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_custom_fill(ip_questdb, penguins_no_nulls_questdb):
+    (
+        ggplot(
+            table="no_nulls",
+            with_="no_nulls",
+            mapping=aes(x=["bill_depth_mm"], fill=["red"]),
+        )
+        + geom_histogram(bins=10)
+        + facet_wrap("sex")
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["facet_wrap_custom_fill_and_color"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_custom_fill_and_color(ip_questdb, penguins_no_nulls_questdb):
+    (
+        ggplot(
+            table="no_nulls",
+            with_="no_nulls",
+            mapping=aes(x=["bill_depth_mm"], color="#fff", fill=["red"]),
+        )
+        + geom_histogram(bins=10)
+        + facet_wrap("sex")
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["facet_wrap_custom_stacked_histogram"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_stacked_histogram(ip_questdb, diamonds_data):
+    (
+        ggplot(diamonds_data, aes(x=["price"]))
+        + geom_histogram(bins=10, fill="color")
+        + facet_wrap("cut")
+    )
+
+
+@_cleanup_cm()
+@image_comparison(
+    baseline_images=["facet_wrap_custom_stacked_histogram_cmap"],
+    extensions=["png"],
+    remove_text=False,
+)
+def test_facet_wrap_stacked_histogram_cmap(ip_questdb, diamonds_data):
+    (
+        ggplot(diamonds_data, aes(x=["price"]))
+        + geom_histogram(bins=10, fill="color", cmap="plasma")
+        + facet_wrap("cut")
+    )
+
+
+@_cleanup_cm()
+@pytest.mark.parametrize(
+    "x, expected_error, expected_error_message",
+    [
+        ([], ValueError, "Column name has not been specified"),
+        ([""], ValueError, "Column name has not been specified"),
+        (None, ValueError, "Column name has not been specified"),
+        ("", ValueError, "Column name has not been specified"),
+        ([None, None], ValueError, "please ensure that you specify only one column"),
+        (
+            ["price", "table"],
+            ValueError,
+            "please ensure that you specify only one column",
+        ),
+        (
+            ["price", "table", "color"],
+            ValueError,
+            "please ensure that you specify only one column",
+        ),
+        ([None], TypeError, "expected str instance, NoneType found"),
+    ],
+)
+def test_example_histogram_stacked_input_error(
+    diamonds_data, ip_questdb, x, expected_error, expected_error_message
+):
+    with pytest.raises(expected_error) as error:
+        (ggplot(diamonds_data, aes(x=x)) + geom_histogram(bins=500, fill="cut"))
+
+    assert expected_error_message in str(error.value)
+
+
+def test_histogram_no_bins_error(ip_questdb, diamonds_data):
+    with pytest.raises(ValueError) as error:
+        (ggplot(diamonds_data, aes(x=["price"])) + geom_histogram())
+
+    assert "Please specify a valid number of bins." in str(error.value)
 
 
 @pytest.mark.parametrize(

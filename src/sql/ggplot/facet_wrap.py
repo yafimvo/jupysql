@@ -1,19 +1,16 @@
 from jinja2 import Template
 import math
 import sql.connection
-from sql.store import store
 from sql.telemetry import telemetry
-import sqlalchemy
 
 
 def _run_query(query, with_=None, conn=None):
     if not conn:
         conn = sql.connection.Connection.current.session
 
-    if with_:
-        query = str(store.render(query, with_=with_))
+    query = sql.connection.Connection.prepare_query(query, conn, with_)
 
-    return conn.execute(sqlalchemy.text(query)).fetchall()
+    return conn.execute(query).fetchall()
 
 
 class facet:

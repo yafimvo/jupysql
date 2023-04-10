@@ -1,8 +1,8 @@
 # CHANGELOG
 
 ## 0.7.1dev
+* [Feature] support for custom drivers added (#350)
 * [Doc] Updating connecting guide (by @DaveOkpare) (#56)
-
 * [Feature] Upgrades SQLAlchemy version to 2
 
 ## 0.7.0 (2023-04-05)

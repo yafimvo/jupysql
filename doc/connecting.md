@@ -176,3 +176,84 @@ df.to_sql("numbers", engine)
 %%sql
 SELECT * FROM numbers
 ```
+
+## Custom Connection
+
+```{versionadded} 0.7.1
+```
+
+If you are utilizing an engine that is not explicitly supported by SQLAlchemy, you can still leverage the JupySQL API through a customized connection.
+
+For our example we'll use `QuestDB` which is not supported by SQLAlchemy. If you don't have a QuestDB Server running or you want to spin up one for testing, you can do it with the official [Docker image](https://hub.docker.com/r/questdb/questdb).
+
+```{code-cell} ipython3
+%%bash
+docker run \
+  -p 9000:9000 -p 9009:9009 -p 8812:8812 -p 9003:9003 \
+  -v "$(pwd):/var/lib/questdb" \
+  questdb/questdb:7.1
+```
+
+Ensure that the container is running
+
+```{code-cell} ipython3
+%%bash
+docker ps
+```
+
+
+Populate it with some data by downloading the penguings dataset
+
+```
+from urllib.request import urlretrieve
+
+_ = urlretrieve(
+    "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",
+    "penguins.csv",
+)
+```
+
+And creating a new table `penguings`
+
+```
+df = pd.read_csv("penguins.csv", sep=",")
+df.drop_duplicates(subset=None, inplace=True)
+df.to_csv("penguins.csv", index=False)
+
+with open("penguins.csv", 'rb') as csv:
+    file_data = csv.read()
+    files = {'data': ("penguins", file_data)}
+    response = requests.post("http://127.0.0.1:9000/imp", files=files)
+```
+
+Now, let's establish our connection using 
+
+```{code-cell} ipython3
+import psycopg2 as pg
+engine = pg.connect(
+    "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
+)
+```
+
+```{note}
+We currently support `%sql`, `%sqlplot`, and the `ggplot` API when using custom connection. However, please be advised that there may be some features or functionalities that may not be fully compatible with JupySQL.
+```
+
+Connect to JupySQL and pass our custom engine
+
+```{code-cell} ipython3
+%load_ext sql
+%sql engine
+```
+
+Run SQL query
+
+```{code-cell} ipython3
+%sql SELECT count(*) FROM "penguins"
+```
+
+Use `ggplot` API
+
+```{code-cell} ipython3
+(ggplot(diamonds_data, aes(x=x)) + geom_histogram(bins=10, fill="cut"))
+```

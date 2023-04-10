@@ -7,6 +7,7 @@ from sqlalchemy.exc import NoSuchModuleError
 from IPython.core.error import UsageError
 import difflib
 import sqlglot
+from sql.store import store
 
 PLOOMBER_SUPPORT_LINK_STR = (
     "For technical support: https://ploomber.io/community"
@@ -484,6 +485,38 @@ class Connection:
             # connection
             is_custom_connection_ = conn.__class__.__name__ == "connection"
         return is_custom_connection_
+
+    @classmethod
+    def prepare_query(self, query, conn=None, with_=None) -> str:
+        """
+        Returns a textual representation of a query based
+        on the current connection
+
+        Parameters
+        ----------
+        query : str
+            SQL query
+
+        conn : connection, default None
+            Database connection. If None, it uses the current connection
+
+        with_ : string, default None
+            The key to use in with sql clause
+        """
+        if not conn:
+            conn = self.current.session
+
+        if with_:
+            query = str(store.render(query, with_=with_))
+
+        query = self._transpile_query(query)
+
+        if self.is_custom_connection(conn):
+            query = str(query)
+        else:
+            query = sqlalchemy.sql.text(query)
+
+        return query
 
 
 class CustomSession(sqlalchemy.engine.base.Connection):

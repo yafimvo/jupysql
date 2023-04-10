@@ -4,7 +4,6 @@ Plot using the SQL backend
 from ploomber_core.dependencies import requires
 from ploomber_core.exceptions import modify_exceptions
 from jinja2 import Template
-import sqlalchemy
 
 try:
     import matplotlib.pyplot as plt
@@ -18,7 +17,6 @@ try:
 except ModuleNotFoundError:
     np = None
 
-from sql.store import store
 import sql.connection
 from sql.telemetry import telemetry
 import warnings
@@ -39,10 +37,9 @@ FROM "{{table}}"
     )
     query = template.render(table=table, column=column)
 
-    if with_:
-        query = str(store.render(query, with_=with_))
+    query = sql.connection.Connection.prepare_query(query, con, with_)
 
-    values = con.execute(sqlalchemy.sql.text(query)).fetchone()
+    values = con.execute(query).fetchone()
     keys = ["q1", "med", "q3", "mean", "N"]
     return {k: float(v) for k, v in zip(keys, values)}
 
@@ -61,10 +58,9 @@ FROM (
 
     query = template.render(table=table, column=column, hival=hival)
 
-    if with_:
-        query = str(store.render(query, with_=with_))
-    query = sql.connection.Connection._transpile_query(query)
-    values = con.execute(sqlalchemy.sql.text(query)).fetchone()
+    query = sql.connection.Connection.prepare_query(query, con, with_)
+
+    values = con.execute(query).fetchone()
     keys = ["N", "wiskhi_max"]
     return {k: float(v) for k, v in zip(keys, values)}
 
@@ -83,10 +79,9 @@ FROM (
 
     query = template.render(table=table, column=column, loval=loval)
 
-    if with_:
-        query = str(store.render(query, with_=with_))
-    query = sql.connection.Connection._transpile_query(query)
-    values = con.execute(sqlalchemy.sql.text(query)).fetchone()
+    query = sql.connection.Connection.prepare_query(query, con, with_)
+
+    values = con.execute(query).fetchone()
     keys = ["N", "wisklo_min"]
     return {k: float(v) for k, v in zip(keys, values)}
 
@@ -101,10 +96,9 @@ FROM "{{table}}"
     )
     query = template.render(table=table, column=column, pct=pct)
 
-    if with_:
-        query = str(store.render(query, with_=with_))
-    query = sql.connection.Connection._transpile_query(query)
-    values = con.execute(sqlalchemy.sql.text(query)).fetchone()[0]
+    query = sql.connection.Connection.prepare_query(query, con, with_)
+
+    values = con.execute(query).fetchone()[0]
     return values
 
 
@@ -119,10 +113,9 @@ OR  "{{column}}" > {{whishi}}
     )
     query = template.render(table=table, column=column, whislo=whislo, whishi=whishi)
 
-    if with_:
-        query = str(store.render(query, with_=with_))
-    query = sql.connection.Connection._transpile_query(query)
-    results = [float(n[0]) for n in con.execute(sqlalchemy.sql.text(query)).fetchall()]
+    query = sql.connection.Connection.prepare_query(query, con, with_)
+
+    results = [float(n[0]) for n in con.execute(query).fetchall()]
     return results
 
 
@@ -286,15 +279,9 @@ FROM "{{table}}"
     template = Template(template_)
     query = template.render(table=table, column=column)
 
-    if with_:
-        query = str(store.render(query, with_=with_))
-    query = sql.connection.Connection._transpile_query(query)
-    if sql.connection.Connection.is_custom_connection(con):
-        query = str(query)
-    else:
-        query = sqlalchemy.sql.text(query)
+    query = sql.connection.Connection.prepare_query(query, con, with_)
 
-    min_, max_ = con.execute(query).fetchone()
+    min_, max_ = con.execute(str(query)).fetchone()
     return min_, max_
 
 
@@ -547,14 +534,7 @@ def _histogram(table, column, bins, with_=None, conn=None, facet=None):
 
         query = template.render(table=table, column=column, filter_query=filter_query)
 
-    if with_:
-        query = str(store.render(query, with_=with_))
-
-    query = sql.connection.Connection._transpile_query(query)
-    if sql.connection.Connection.is_custom_connection(conn):
-        query = str(query)
-    else:
-        query = sqlalchemy.sql.text(query)
+    query = sql.connection.Connection.prepare_query(query, conn, with_)
 
     data = conn.execute(query).fetchall()
 
@@ -583,7 +563,8 @@ def _histogram_stacked(
 
     cases = []
     for bin in bins:
-        case = f'SUM(CASE WHEN floor = {bin} THEN count ELSE 0 END) AS "{bin}",'
+        case = f'SUM(CASE WHEN FLOOR({column}/{bin_size})*{bin_size} = {bin} \
+                 THEN 1 ELSE 0 END) AS "{bin}",'
         cases.append(case)
 
     cases = " ".join(cases)
@@ -594,13 +575,8 @@ def _histogram_stacked(
         """
         SELECT {{category}},
         {{cases}}
-        FROM (
-        SELECT FLOOR("{{column}}"/{{bin_size}})*{{bin_size}} AS floor,
-        {{category}}, COUNT(*) as count
         FROM "{{table}}"
-        GROUP BY floor, {{category}}
         {{filter_query}}
-        ) AS subquery
         GROUP BY {{category}};
         """
     )
@@ -613,10 +589,8 @@ def _histogram_stacked(
         cases=cases,
     )
 
-    if with_:
-        query = str(store.render(query, with_=with_))
+    query = sql.connection.Connection.prepare_query(query, conn, with_)
 
-    query = sql.connection.Connection._transpile_query(query)
-    data = conn.execute(sqlalchemy.text(query)).fetchall()
+    data = conn.execute(query).fetchall()
 
     return data
