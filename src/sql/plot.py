@@ -281,7 +281,7 @@ FROM "{{table}}"
 
     query = sql.connection.Connection.prepare_query(query, con, with_)
 
-    min_, max_ = con.execute(str(query)).fetchone()
+    min_, max_ = con.execute(query).fetchone()
     return min_, max_
 
 
