@@ -542,7 +542,7 @@ class CustomConnection(Connection):
     @telemetry.log_call("CustomConnection", payload=True)
     def __init__(self, payload, engine=None, alias=None):
         try:
-            payload["engine"] = str(engine)
+            payload["engine"] = type(engine)
         except Exception as e:
             payload["engine_parsing_error"] = str(e)
 
