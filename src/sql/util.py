@@ -75,13 +75,21 @@ def is_table_exists(
 
     if not _is_exist:
         if not ignore_error:
+            try_find_suggestions = not Connection.is_custom_connection()
             expected = []
-            existing_schemas = inspect.get_schema_names()
+            existing_schemas = []
+            existing_tables = []
+
+            if try_find_suggestions:
+                existing_schemas = inspect.get_schema_names()
+
             if schema and schema not in existing_schemas:
                 expected = existing_schemas
                 invalid_input = schema
             else:
-                existing_tables = _get_list_of_existing_tables()
+                if try_find_suggestions:
+                    existing_tables = _get_list_of_existing_tables()
+
                 expected = existing_tables
                 invalid_input = table
 
@@ -156,6 +164,7 @@ def _is_table_exists(table: str, with_: str) -> bool:
     """
     Runs a SQL query to check if table exists
     """
+
     identifiers = Connection.get_curr_identifiers()
     if with_:
         return table in list(store)
@@ -168,10 +177,18 @@ def _is_table_exists(table: str, with_: str) -> bool:
             else:
                 query = "SELECT * FROM {0}{1}{0} WHERE 1=0".format(iden, table)
             try:
-                query = sql.connection.Connection._transpile_query(query)
-                sql.run.raw_run(Connection.current, query)
+                query = Connection.prepare_query(query)
+                Connection.current.session.execute(query)
                 return True
             except Exception:
                 pass
 
     return False
+
+
+def support_only_sql_alchemy_connection(command, conn=None):
+    """
+    Throws an AttributeError if connection is not SQLAlchemy
+    """
+    if sql.connection.Connection.is_custom_connection(conn):
+        raise AttributeError(f"{command} is not supported for a custom engine")

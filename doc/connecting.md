@@ -185,12 +185,16 @@ SELECT * FROM numbers
 If you are utilizing an engine that is not explicitly supported by SQLAlchemy, you can still leverage the JupySQL API through a customized connection.
 
 ```{note}
-We currently support `%sql`, `%sqlplot`, and the `ggplot` API when using custom connection. However, please be advised that there may be some features or functionalities that may not be fully compatible with JupySQL.
+We currently support `%sql`, `%sqlplot`, and the `ggplot` API when using custom connection. However, please be advised that there may be some features/functionalities that won't be fully compatible with JupySQL.
 ```
 
 For this example we'll use `QuestDB` which is not supported by SQLAlchemy.
 
-Initialize a connection
+Initialize a connection, QuestDB works with the psycopg2 driver.
+
+```{note}
+Before running the following commands, please make sure you have QuestDB running locally. If you don't have it installed, you can install it via Docker by following the instructions [here](https://hub.docker.com/r/questdb/questdb).
+```
 
 ```
 import psycopg2 as pg

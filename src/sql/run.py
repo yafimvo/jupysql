@@ -25,8 +25,6 @@ import warnings
 from sql.connection import Connection
 from collections.abc import Iterable
 
-IS_SQLALCHEMY_ONE = int(sqlalchemy.__version__.split(".")[0]) == 1
-
 
 def unduplicate_field_names(field_names):
     """Append a number to duplicate field names to make them unique."""
@@ -490,7 +488,7 @@ def run(conn, sql, config):
             manual_commit = set_autocommit(conn, config)
 
             is_custom_connection = Connection.is_custom_connection(conn)
-            if IS_SQLALCHEMY_ONE or is_custom_connection:
+            if is_custom_connection:
                 txt_ = str(txt)
             else:
                 txt_ = txt

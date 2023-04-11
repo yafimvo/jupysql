@@ -7,6 +7,7 @@ from IPython.core.magic_arguments import argument, magic_arguments
 from IPython.core.error import UsageError
 from sqlglot import select, condition
 from sqlalchemy import text
+from sql import util
 
 try:
     from traitlets.config.configurable import Configurable
@@ -40,8 +41,8 @@ class SqlCmdMagic(Magics, Configurable):
         Raises UsageError in case of an invalid input, executes command otherwise.
         """
 
-        if sql.connection.Connection.is_custom_connection():
-            raise AttributeError("%sqlcmd is not supported for a custom engine")
+        # We relly on SQLAlchemy when inspecting tables
+        util.support_only_sql_alchemy_connection("%sqlcmd")
 
         AVAILABLE_SQLCMD_COMMANDS = ["tables", "columns", "test", "profile"]
 

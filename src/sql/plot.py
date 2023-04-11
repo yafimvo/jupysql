@@ -20,6 +20,7 @@ except ModuleNotFoundError:
 import sql.connection
 from sql.telemetry import telemetry
 import warnings
+from sql import util
 
 
 def _summary_stats(con, table, column, with_=None):
@@ -123,6 +124,9 @@ OR  "{{column}}" > {{whishi}}
 @modify_exceptions
 def _boxplot_stats(con, table, column, whis=1.5, autorange=False, with_=None):
     """Compute statistics required to create a boxplot"""
+
+    # calculating stats might fail on other DBs (percentile_disc)
+    util.support_only_sql_alchemy_connection("boxplot")
 
     def _compute_conf_interval(N, med, iqr):
         notch_min = med - 1.57 * iqr / np.sqrt(N)

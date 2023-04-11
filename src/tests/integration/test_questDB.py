@@ -6,8 +6,9 @@ import pandas as pd
 import urllib.request
 import requests
 from pathlib import Path
-from sql.ggplot import ggplot, aes, geom_histogram, facet_wrap
+from sql.ggplot import ggplot, aes, geom_histogram, facet_wrap, geom_boxplot
 from matplotlib.testing.decorators import image_comparison, _cleanup_cm
+from sql.connection import CustomConnection, CustomSession
 
 """
 This test class includes all QuestDB-related tests and specifically focuses
@@ -15,6 +16,10 @@ on testing the custom engine initialization.
 
 TODO: We should generelize these tests to check different engines/connections.
 """
+
+QUESTDB_CONNECTION_STRING = (
+    "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
+)
 
 
 @pytest.fixture
@@ -109,9 +114,7 @@ def questdb_container(is_bypass_init=False):
     def test_questdb_connection():
         import psycopg as pg
 
-        engine = pg.connect(
-            "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
-        )
+        engine = pg.connect(QUESTDB_CONNECTION_STRING)
         engine.close()
 
     with new_container(
@@ -134,10 +137,10 @@ def ip_questdb(diamonds_data, penguins_data, ip_empty):
     """
     with questdb_container():
         ip_empty.run_cell(
-            """
+            f"""
         import psycopg2 as pg
         engine = pg.connect(
-            "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
+            "{QUESTDB_CONNECTION_STRING}"
         )
         %sql engine
         """
@@ -508,6 +511,12 @@ def test_sql(ip_questdb, query, expected_results):
         assert row == expected_results[i]
 
 
+# NOT SUPPORTED ERRORS
+
+
+NOT_SUPPORTED_SUFFIX = "is not supported for a custom engine"
+
+
 @pytest.mark.parametrize(
     "query",
     [
@@ -520,8 +529,94 @@ def test_sql(ip_questdb, query, expected_results):
     ],
 )
 def test_sqlcmd_not_supported_error(ip_questdb, query):
-    expected_error_message = "%sqlcmd is not supported for a custom engine"
+    expected_error_message = f"%sqlcmd {NOT_SUPPORTED_SUFFIX}"
     out = ip_questdb.run_cell(query)
     error_message = str(out.error_in_exec)
     assert isinstance(out.error_in_exec, AttributeError)
     assert str(expected_error_message).lower() in error_message.lower()
+
+
+@_cleanup_cm()
+@pytest.mark.parametrize(
+    "func, expected_error_message",
+    [
+        (
+            lambda: (ggplot(penguins_data, aes(x="body_mass_g")) + geom_boxplot()),
+            f"boxplot {NOT_SUPPORTED_SUFFIX}",
+        ),
+        (
+            lambda: (
+                ggplot(table="no_nulls", with_="no_nulls", mapping=aes(x="body_mass_g"))
+                + geom_boxplot()
+            ),
+            f"boxplot {NOT_SUPPORTED_SUFFIX}",
+        ),
+    ],
+)
+def test_ggplot_boxplot_not_supported_error(
+    ip_questdb, penguins_no_nulls_questdb, penguins_data, func, expected_error_message
+):
+    with pytest.raises(AttributeError) as err:
+        func()
+
+    assert expected_error_message in str(err)
+
+
+@_cleanup_cm()
+@pytest.mark.parametrize(
+    "query, expected_error_message",
+    [
+        (
+            "%sqlplot boxplot --column body_mass_g --table penguins.csv",
+            f"boxplot {NOT_SUPPORTED_SUFFIX}",
+        ),
+        (
+            "%sqlplot boxplot --column body_mass_g --table no_nulls --with no_nulls",
+            f"boxplot {NOT_SUPPORTED_SUFFIX}",
+        ),
+    ],
+)
+def test_sqlplot_not_supported_error(
+    ip_questdb, penguins_data, penguins_no_nulls_questdb, query, expected_error_message
+):
+    ip_questdb.run_cell(query)
+    out = ip_questdb.run_cell(query)
+    error_message = str(out.error_in_exec)
+    assert isinstance(out.error_in_exec, AttributeError)
+    assert str(expected_error_message).lower() in error_message.lower()
+
+
+# Utils
+@pytest.mark.parametrize(
+    "alias",
+    [None, "test_alias"],
+)
+def test_custom_connection(ip_questdb, alias):
+    import psycopg as pg
+
+    engine = pg.connect(QUESTDB_CONNECTION_STRING)
+
+    expected_connection_name = "custom_driver"
+
+    connection = CustomConnection(engine, alias)
+
+    assert isinstance(connection, CustomConnection)
+    assert connection.name is expected_connection_name
+    assert connection.dialect is expected_connection_name
+    assert connection.alias is alias
+    assert len(connection.connections) > 0
+    assert isinstance(connection.session, CustomSession)
+
+    if alias:
+        stored_connection = connection.connections[alias]
+    else:
+        stored_connection = connection.connections[expected_connection_name]
+
+    assert isinstance(stored_connection, CustomConnection)
+
+
+def test_custom_connection_error(ip_questdb):
+    with pytest.raises(ValueError) as err:
+        CustomConnection()
+
+    assert "Engine cannot be None" in str(err)

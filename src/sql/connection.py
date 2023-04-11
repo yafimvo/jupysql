@@ -8,6 +8,7 @@ from IPython.core.error import UsageError
 import difflib
 import sqlglot
 from sql.store import store
+from sql.telemetry import telemetry
 
 PLOOMBER_SUPPORT_LINK_STR = (
     "For technical support: https://ploomber.io/community"
@@ -538,7 +539,16 @@ class CustomConnection(Connection):
     Custom connection for unsupported drivers in sqlalchemy
     """
 
-    def __init__(self, engine, alias=None):
+    @telemetry.log_call("CustomConnection", payload=True)
+    def __init__(self, payload, engine=None, alias=None):
+        try:
+            payload["engine"] = str(engine)
+        except Exception as e:
+            payload["engine_parsing_error"] = str(e)
+
+        if engine is None:
+            raise ValueError("Engine cannot be None")
+
         connection_name_ = "custom_driver"
         self.url = str(engine)
         self.name = connection_name_
