@@ -30,6 +30,7 @@ parts:
       - file: integrations/mindsdb
       - file: integrations/postgres-connect
       - file: integrations/compatibility
+      - file: integrations/custom-connection
 
   - caption: API Reference
     chapters:

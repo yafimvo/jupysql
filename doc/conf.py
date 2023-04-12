@@ -22,6 +22,7 @@ nb_execution_excludepatterns = [
     "integrations/mariadb.ipynb",
     "integrations/clickhouse.ipynb",
     "integrations/mindsdb.ipynb",
+    "integrations/custom-connection.ipynb",
 ]
 nb_execution_in_temp = True
 nb_execution_show_tb = True
