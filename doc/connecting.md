@@ -75,6 +75,7 @@ Check out our guide for connecting to a database:
 - [MindsDB](integrations/mindsdb)
 - [MSSQL](integrations/mssql)
 - [MySQL](integrations/mysql)
+- [QuestDB](integrations/db-api)
 
 +++
 
@@ -217,7 +218,7 @@ Connect to JupySQL with our custom connection
 %sql engine
 ```
 
-For a full example please see [QuestDB tutorial](integrations/db-api.ipynb#QuestDB)
+For a full example please see [QuestDB tutorial](integrations/db-api.ipynb)
 
 ## Conclusion
 
