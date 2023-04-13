@@ -141,9 +141,9 @@ class TableDescription(DatabaseInspection):
         )
 
         if Connection.is_custom_connection():
-            columns = columns_query_result.keys()
-        else:
             columns = [i[0] for i in columns_query_result.description]
+        else:
+            columns = columns_query_result.keys()
 
         table_stats = dict({})
         columns_to_include_in_report = set()
