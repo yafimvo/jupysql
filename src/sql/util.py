@@ -82,7 +82,7 @@ def is_table_exists(
 
     if not _is_exist:
         if not ignore_error:
-            try_find_suggestions = not conn.is_custom_connection()
+            try_find_suggestions = not Connection.is_custom_connection(conn)
             expected = []
             existing_schemas = []
             existing_tables = []

@@ -10,7 +10,7 @@ import html
 import prettytable
 import sqlalchemy
 import sqlparse
-import sql.connection
+from sql.connection import Connection
 from .column_guesser import ColumnGuesserMixin
 
 try:
@@ -197,7 +197,7 @@ class ResultSet(list, ColumnGuesserMixin):
         frame = pd.DataFrame(self, columns=(self and self.keys) or [])
         payload[
             "connection_info"
-        ] = sql.connection.Connection.current._get_curr_sqlalchemy_connection_info()
+        ] = Connection.current._get_curr_sqlalchemy_connection_info()
         return frame
 
     @telemetry.log_call("polars-data-frame")
@@ -486,7 +486,7 @@ def run(conn, sql, config):
             txt = sqlalchemy.sql.text(statement)
             manual_commit = set_autocommit(conn, config)
 
-            is_custom_connection = conn.is_custom_connection()
+            is_custom_connection = Connection.is_custom_connection(conn)
             if is_custom_connection:
                 txt_ = str(txt)
             else:

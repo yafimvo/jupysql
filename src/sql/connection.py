@@ -359,8 +359,7 @@ class Connection:
             )
             conn.session.close()
 
-    @classmethod
-    def is_custom_connection(self, conn=None) -> bool:
+    def is_custom_connection(conn=None) -> bool:
         """
         Checks if given connection is custom
         """
@@ -393,7 +392,6 @@ class Connection:
 
         if not self.session:
             return None
-        # engine = self.metadata.bind if IS_SQLALCHEMY_ONE else self.session
 
         try:
             engine = self.metadata.bind if IS_SQLALCHEMY_ONE else self.session

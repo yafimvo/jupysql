@@ -5,7 +5,6 @@ from contextlib import contextmanager
 import pandas as pd
 import urllib.request
 import requests
-from pathlib import Path
 from sql.ggplot import ggplot, aes, geom_histogram, facet_wrap, geom_boxplot
 from matplotlib.testing.decorators import image_comparison, _cleanup_cm
 from sql.connection import CustomConnection, CustomSession
@@ -29,11 +28,10 @@ def penguins_data(tmpdir):
     """
     file_path_str = str(tmpdir.join("penguins.csv"))
 
-    if not Path(file_path_str).is_file():
-        urllib.request.urlretrieve(
-            "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",  # noqa breaks the check-for-broken-links
-            file_path_str,
-        )
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",  # noqa breaks the check-for-broken-links
+        file_path_str,
+    )
 
     yield file_path_str
 
@@ -45,11 +43,10 @@ def diamonds_data(tmpdir):
     """
     file_path_str = "diamonds.csv"
 
-    if not Path(file_path_str).is_file():
-        urllib.request.urlretrieve(
-            "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv",  # noqa breaks the check-for-broken-links
-            file_path_str,
-        )
+    urllib.request.urlretrieve(
+        "https://raw.githubusercontent.com/tidyverse/ggplot2/main/data-raw/diamonds.csv",  # noqa breaks the check-for-broken-links
+        file_path_str,
+    )
 
     yield file_path_str
 
