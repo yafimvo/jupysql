@@ -203,7 +203,7 @@ Initialize a connection, QuestDB works with the psycopg2 driver.
 Before running the following commands, please make sure you have QuestDB running locally. If you don't have it installed, you can install it via Docker by following the instructions [here](https://hub.docker.com/r/questdb/questdb).
 ```
 
-```{code-cell} ipython3
+```
 import psycopg2 as pg
 engine = pg.connect(
     "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
@@ -212,7 +212,7 @@ engine = pg.connect(
 
 Connect to JupySQL with our custom connection
 
-```{code-cell} ipython3
+```
 %load_ext sql
 %sql engine
 ```
