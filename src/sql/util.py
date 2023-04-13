@@ -1,6 +1,5 @@
 from sql import inspect
 import difflib
-import sql.run
 from sql.connection import Connection
 from sql.store import store
 
@@ -39,7 +38,11 @@ def _is_long_number(num) -> bool:
 
 
 def is_table_exists(
-    table: str, schema: str = None, ignore_error: bool = False, with_: str = None
+    table: str,
+    schema: str = None,
+    ignore_error: bool = False,
+    with_: str = None,
+    conn=None,
 ) -> bool:
     """
     Checks if a given table exists for a given connection
@@ -63,6 +66,10 @@ def is_table_exists(
             return False
         else:
             raise ValueError("Table cannot be None")
+    if not Connection.current:
+        raise RuntimeError("No active connection")
+    if not conn:
+        conn = Connection.current
 
     table = strip_multiple_chars(table, "\"'")
 
@@ -71,11 +78,11 @@ def is_table_exists(
     else:
         table_ = table
 
-    _is_exist = _is_table_exists(table_, with_)
+    _is_exist = _is_table_exists(table_, with_, conn)
 
     if not _is_exist:
         if not ignore_error:
-            try_find_suggestions = not Connection.is_custom_connection()
+            try_find_suggestions = not conn.is_custom_connection()
             expected = []
             existing_schemas = []
             existing_tables = []
@@ -160,12 +167,13 @@ def strip_multiple_chars(string: str, chars: str) -> str:
     return string.translate(str.maketrans("", "", chars))
 
 
-def _is_table_exists(table: str, with_: str) -> bool:
+def _is_table_exists(table: str, with_: str, conn) -> bool:
     """
     Runs a SQL query to check if table exists
     """
-
-    identifiers = Connection.get_curr_identifiers()
+    if not conn:
+        conn = Connection.current
+    identifiers = conn.get_curr_identifiers()
     if with_:
         return table in list(store)
     else:
@@ -177,8 +185,7 @@ def _is_table_exists(table: str, with_: str) -> bool:
             else:
                 query = "SELECT * FROM {0}{1}{0} WHERE 1=0".format(iden, table)
             try:
-                query = Connection.prepare_query(query)
-                Connection.current.session.execute(query)
+                conn.execute(query)
                 return True
             except Exception:
                 pass
@@ -186,9 +193,9 @@ def _is_table_exists(table: str, with_: str) -> bool:
     return False
 
 
-def support_only_sql_alchemy_connection(command, conn=None):
+def support_only_sql_alchemy_connection(command):
     """
     Throws an AttributeError if connection is not SQLAlchemy
     """
-    if sql.connection.Connection.is_custom_connection(conn):
+    if Connection.is_custom_connection():
         raise AttributeError(f"{command} is not supported for a custom engine")

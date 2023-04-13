@@ -528,7 +528,7 @@ NOT_SUPPORTED_SUFFIX = "is not supported for a custom engine"
         ("%sqlcmd test --table penguins.csv"),
     ],
 )
-def test_sqlcmd_not_supported_error(ip_questdb, query):
+def test_sqlcmd_not_supported_error(ip_questdb, query, capsys):
     expected_error_message = f"%sqlcmd {NOT_SUPPORTED_SUFFIX}"
     out = ip_questdb.run_cell(query)
     error_message = str(out.error_in_exec)

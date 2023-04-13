@@ -1,7 +1,8 @@
 # CHANGELOG
 
 ## 0.7.1dev
-* [Feature] support for custom drivers added (#350)
+* [Feature] Support for DB API 2.0 drivers (#350)
+* [Fix] Fix `%sqlcmd columns` in MySQL and MariaDB
 * [Doc] Updating connecting guide (by @DaveOkpare) (#56)
 * [Feature] Upgrades SQLAlchemy version to 2
 

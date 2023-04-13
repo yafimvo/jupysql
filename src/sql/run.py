@@ -22,7 +22,6 @@ from sqlalchemy.orm import Session
 from sql.telemetry import telemetry
 import logging
 import warnings
-from sql.connection import Connection
 from collections.abc import Iterable
 
 
@@ -198,7 +197,7 @@ class ResultSet(list, ColumnGuesserMixin):
         frame = pd.DataFrame(self, columns=(self and self.keys) or [])
         payload[
             "connection_info"
-        ] = sql.connection.Connection._get_curr_sqlalchemy_connection_info()
+        ] = sql.connection.Connection.current._get_curr_sqlalchemy_connection_info()
         return frame
 
     @telemetry.log_call("polars-data-frame")
@@ -487,7 +486,7 @@ def run(conn, sql, config):
             txt = sqlalchemy.sql.text(statement)
             manual_commit = set_autocommit(conn, config)
 
-            is_custom_connection = Connection.is_custom_connection(conn)
+            is_custom_connection = conn.is_custom_connection()
             if is_custom_connection:
                 txt_ = str(txt)
             else:

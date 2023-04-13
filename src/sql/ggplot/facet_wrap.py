@@ -4,15 +4,6 @@ import sql.connection
 from sql.telemetry import telemetry
 
 
-def _run_query(query, with_=None, conn=None):
-    if not conn:
-        conn = sql.connection.Connection.current.session
-
-    query = sql.connection.Connection.prepare_query(query, conn, with_)
-
-    return conn.execute(query).fetchall()
-
-
 class facet:
     def __init__():
         pass
@@ -26,7 +17,10 @@ class facet:
             """
         )
         query = template.render(table=table, column=column)
-        values = _run_query(query, with_=with_)
+
+        conn = sql.connection.Connection.current
+
+        values = conn.execute(query, with_).fetchall()
         n_plots = len(values)
         n_cols = len(values) if len(values) < 3 else 3
         n_rows = math.ceil(n_plots / n_cols)
