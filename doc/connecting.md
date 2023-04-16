@@ -93,6 +93,7 @@ Check out our guide for connecting to a database:
 - [MindsDB](integrations/mindsdb)
 - [MSSQL](integrations/mssql)
 - [MySQL](integrations/mysql)
+- [QuestDB](integrations/db-api)
 
 +++
 
@@ -289,7 +290,7 @@ SELECT * FROM numbers
 ```{versionadded} 0.7.1
 ```
 
-If you are using a database not supported by SQLAlchemy but follows the [DB API 2.0 specification](https://peps.python.org/pep-0249/), you can still use JupySQL.
+If you are using a database that is not supported by SQLAlchemy but follows the [DB API 2.0 specification](https://peps.python.org/pep-0249/), you can still use JupySQL.
 
 ```{note}
 We currently support `%sql`, `%sqlplot`, and the `ggplot` API when using custom connection. However, please be advised that there may be some features/functionalities that won't be fully compatible with JupySQL.
@@ -297,29 +298,31 @@ We currently support `%sql`, `%sqlplot`, and the `ggplot` API when using custom 
 
 For this example we'll generate a `DuckDB` connection, using its native `connect` method.
 
-First, let's the library and initiazlie a new connection
+First, let's import the library and initiazlie a new connection
 
 ```{code-cell} ipython3
 import duckdb
 conn = duckdb.connect()
 ```
 
-Now, load sql and initialize it with our DuckDB connection.
+Now, load `%sql` and initialize it with our DuckDB connection.
 
 ```{code-cell} ipython3
 %sql conn
 ```
 
-Download sample data
+Download some data
 
 ```{code-cell} ipython3
 import urllib
 
 urllib.request.urlretrieve(
-  "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",  # noqa
+  "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",
   "penguins.csv",
 )
 ```
+
+You're all set
 
 ```{code-cell} ipython3
 %sql select * from penguins.csv limit 3
