@@ -295,29 +295,37 @@ If you are using a database not supported by SQLAlchemy but follows the [DB API 
 We currently support `%sql`, `%sqlplot`, and the `ggplot` API when using custom connection. However, please be advised that there may be some features/functionalities that won't be fully compatible with JupySQL.
 ```
 
-For this example we'll use `QuestDB` which is not supported by SQLAlchemy.
+For this example we'll generate a `DuckDB` connection, using its native `connect` method.
 
-Initialize a connection, QuestDB works with the psycopg2 driver.
+First, let's the library and initiazlie a new connection
 
-```{note}
-Before running the following commands, please make sure you have QuestDB running locally. If you don't have it installed, you can install it via Docker by following the instructions [here](https://hub.docker.com/r/questdb/questdb).
+```{code-cell} ipython3
+import duckdb
+conn = duckdb.connect()
 ```
 
+Now, load sql and initialize it with our DuckDB connection.
+
+```{code-cell} ipython3
+%sql conn
 ```
-import psycopg2 as pg
-engine = pg.connect(
-    "dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'"
+
+Download sample data
+
+```{code-cell} ipython3
+import urllib
+
+urllib.request.urlretrieve(
+  "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",  # noqa
+  "penguins.csv",
 )
 ```
 
-Connect to JupySQL with our custom connection
-
-```
-%load_ext sql
-%sql engine
+```{code-cell} ipython3
+%sql select * from penguins.csv limit 3
 ```
 
-For a full example please see [QuestDB tutorial](integrations/db-api.ipynb)
+For a more detailed example please see [QuestDB tutorial](integrations/db-api.ipynb)
 
 ## Conclusion
 
@@ -331,3 +339,4 @@ Vendor-specific details are available in our tutorials:
 - [MindsDB](integrations/mindsdb)
 - [MSSQL](integrations/mssql)
 - [MySQL](integrations/mysql)
+- [QuestDB](integrations/db-api)
