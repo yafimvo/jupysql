@@ -116,11 +116,11 @@ class ResultSet(list, ColumnGuesserMixin):
         self.pretty = None
 
         if is_sql_alchemy_results:
-            has_results = sqlaproxy.returns_rows
+            should_try_fetch_results = sqlaproxy.returns_rows
         else:
-            has_results = sqlaproxy.rowcount
+            should_try_fetch_results = True
 
-        if has_results:
+        if should_try_fetch_results:
             if is_sql_alchemy_results:
                 self.keys = sqlaproxy.keys()
             elif isinstance(sqlaproxy.description, Iterable):
@@ -496,7 +496,8 @@ def run(conn, sql, config):
             result = conn.session.execute(txt_)
         _commit(conn=conn, config=config, manual_commit=manual_commit)
         if result and config.feedback:
-            print(interpret_rowcount(result.rowcount))
+            if hasattr(result, "rowcount"):
+                print(interpret_rowcount(result.rowcount))
 
     resultset = ResultSet(result, config)
     return select_df_type(resultset, config)

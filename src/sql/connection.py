@@ -376,7 +376,11 @@ class Connection:
         else:
             # TODO: Better check when user passes a custom
             # connection
-            is_custom_connection_ = conn.__class__.__name__ == "connection"
+            if isinstance(conn, (str, bool, Connection)):
+                is_custom_connection_ = False
+            else:
+                is_custom_connection_ = True
+
         return is_custom_connection_
 
     def _get_curr_sqlalchemy_connection_info(self):
