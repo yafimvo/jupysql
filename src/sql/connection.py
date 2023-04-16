@@ -376,8 +376,11 @@ class Connection:
         else:
             # TODO: Better check when user passes a custom
             # connection
-            if isinstance(
-                conn, (sqlalchemy.engine.base.Connection, Connection, str, bool)
+            if (
+                isinstance(
+                    conn, (sqlalchemy.engine.base.Connection, Connection, str, bool)
+                )
+                or conn.__class__.__name__ == "DataFrame"
             ):
                 is_custom_connection_ = False
             else:
