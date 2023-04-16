@@ -376,7 +376,9 @@ class Connection:
         else:
             # TODO: Better check when user passes a custom
             # connection
-            if isinstance(conn, (str, bool, Connection)):
+            if isinstance(
+                conn, (sqlalchemy.engine.base.Connection, Connection, str, bool)
+            ):
                 is_custom_connection_ = False
             else:
                 is_custom_connection_ = True
