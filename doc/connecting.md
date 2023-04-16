@@ -317,7 +317,7 @@ Download some data
 import urllib
 
 urllib.request.urlretrieve(
-  "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",
+  "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv", # nbqa
   "penguins.csv",
 )
 ```
