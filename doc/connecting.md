@@ -81,8 +81,6 @@ from sqlalchemy import create_engine
 engine = create_engine(db_url)
 ```
 
-+++
-
 ## Connecting to Databases
 
 Check out our guide for connecting to a database:
@@ -239,6 +237,7 @@ environ["DATABASE_URL"] = f"postgresql://user:{password}@localhost/database"
 # this cell is hidden in the docs, only used to fake
 # the environment variable
 from os import environ
+
 environ["DATABASE_URL"] = "sqlite://"
 ```
 
@@ -302,6 +301,7 @@ First, let's import the library and initiazlie a new connection
 
 ```{code-cell} ipython3
 import duckdb
+
 conn = duckdb.connect()
 ```
 
@@ -317,8 +317,8 @@ Download some data
 import urllib
 
 urllib.request.urlretrieve(
-  "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv", # nbqa
-  "penguins.csv",
+    "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/penguins.csv",
+    "penguins.csv",
 )
 ```
 
