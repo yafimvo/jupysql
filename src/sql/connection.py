@@ -44,9 +44,7 @@ MISSING_PACKAGE_LIST_EXCEPT_MATCHERS = {
     "pymssql": "pymssql",
 }
 
-DIALECT_NAME_SQLALCHEMY_TO_SQLGLOT_MAPPING = {
-    "postgresql": "postgres",
-}
+DIALECT_NAME_SQLALCHEMY_TO_SQLGLOT_MAPPING = {"postgresql": "postgres", "mssql": "tsql"}
 
 
 def extract_module_name_from_ModuleNotFoundError(e):
@@ -351,34 +349,63 @@ class Connection:
             )
             conn.session.close()
 
-    @classmethod
-    def _get_curr_connection_info(cls):
-        """Returns the dialect, driver, and database server version info"""
-        if not cls.current:
-            return None
+    def _get_curr_sqlalchemy_connection_info(self):
+        """Get the dialect, driver, and database server version info of current
+        connected dialect
 
-        engine = cls.current.metadata.bind if IS_SQLALCHEMY_ONE else cls.current
+        Returns
+        -------
+        dict
+            The dictionary which contains the SQLAlchemy-based dialect
+            information, or None if there is no current connection.
+        """
+
+        if not self.session:
+            return None
+        engine = self.metadata.bind if IS_SQLALCHEMY_ONE else self.session
+
         return {
             "dialect": getattr(engine.dialect, "name", None),
             "driver": getattr(engine.dialect, "driver", None),
             "server_version_info": getattr(engine.dialect, "server_version_info", None),
         }
 
-    @classmethod
-    def _transpile_query(cls, query):
-        if not cls.current:
-            return query
-        connection_info = cls._get_curr_connection_info()
-        try:
-            write_dialect = DIALECT_NAME_SQLALCHEMY_TO_SQLGLOT_MAPPING.get(
-                connection_info["dialect"], connection_info["dialect"]
-            )
-            query = sqlglot.parse_one(query).sql(dialect=write_dialect)
-        finally:
-            return query
+    def _get_curr_sqlglot_dialect(self):
+        """Get the dialect name in sqlglot package scope
 
-    @classmethod
-    def get_curr_identifiers(cls) -> list:
+        Returns
+        -------
+        str
+            Available dialect in sqlglot package, see more:
+            https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/dialect.py
+        """
+        connection_info = self._get_curr_sqlalchemy_connection_info()
+        if not connection_info:
+            return None
+
+        return DIALECT_NAME_SQLALCHEMY_TO_SQLGLOT_MAPPING.get(
+            connection_info["dialect"], connection_info["dialect"]
+        )
+
+    def is_use_backtick_template(self):
+        """Get if the dialect support backtick (`) syntax as identifier
+
+        Returns
+        -------
+        bool
+            Indicate if the dialect can use backtick identifier in the SQL clause
+        """
+        cur_dialect = self._get_curr_sqlglot_dialect()
+        if not cur_dialect:
+            return False
+        try:
+            return (
+                "`" in sqlglot.Dialect.get_or_raise(cur_dialect).Tokenizer.IDENTIFIERS
+            )
+        except (ValueError, AttributeError, TypeError):
+            return False
+
+    def get_curr_identifiers(self) -> list:
         """
         Returns list of identifiers for current connection
 
@@ -386,7 +413,7 @@ class Connection:
         """
         identifiers = ["", '"']
         try:
-            connection_info = cls._get_curr_connection_info()
+            connection_info = self._get_curr_sqlalchemy_connection_info()
             if connection_info:
                 cur_dialect = connection_info["dialect"]
                 identifiers_ = sqlglot.Dialect.get_or_raise(
@@ -398,3 +425,23 @@ class Connection:
             pass
 
         return identifiers
+
+    def _transpile_query(self, query):
+        """Translate the given SQL clause that's compatible to current connected
+        dialect by sqlglot
+
+        Parameters
+        ----------
+        query : str
+            Original SQL clause
+
+        Returns
+        -------
+        str
+            SQL clause that's compatible to current connected dialect
+        """
+        write_dialect = self._get_curr_sqlglot_dialect()
+        try:
+            query = sqlglot.parse_one(query).sql(dialect=write_dialect)
+        finally:
+            return query

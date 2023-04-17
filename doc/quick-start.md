@@ -1,24 +1,23 @@
 ---
 jupytext:
-  notebook_metadata_filter: myst
   cell_metadata_filter: -all
   formats: md:myst
+  notebook_metadata_filter: myst
   text_representation:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.4
+    jupytext_version: 1.14.5
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
   name: python3
 myst:
   html_meta:
-    description lang=en: "Quickstart for JupySQL: a package to run SQL in Jupyter"
+    description lang=en: 'Quickstart for JupySQL: a package to run SQL in Jupyter'
     keywords: jupyter, sql, jupysql
     property=og:locale: en_US
 ---
-
 
 # Quick Start
 
@@ -42,10 +41,16 @@ Or the following in a Jupyter notebook:
 %pip install jupysql duckdb-engine --quiet
 ```
 
+You might also install it from conda:
+
+```sh
+conda install jupysql -c conda-forge
+```
+
 ## Setup
 
 ```{tip}
-If you are unfamiliar with Jupyter magics, you can refer to our [FAQ](user-guide/FAQ.md)
+If you are unfamiliar with Jupyter magics, you can refer to our [FAQ](user-guide/FAQ.md#what-is-a-magic)
 ```
 
 
