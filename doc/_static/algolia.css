@@ -2,7 +2,7 @@
 Removing `search_bar_text` from 
 `html_theme_options` in conf.py doesn't work */
 .article-header-buttons .search-button {
-    display: none !important;
+    display: none;
 }
 
 /* Hide the search wrapper window when hitting Ctrl+K */
