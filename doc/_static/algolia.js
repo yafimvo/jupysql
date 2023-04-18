@@ -1,6 +1,6 @@
 // https://docsearch.algolia.com/docs/DocSearch-v3#implementation
 // 
-// Since we can't add a custom elemnt to article-header, we wait until
+// Since we can't add a custom element to article-header, we wait until
 // DOM is ready and creating a new element - #docsearch
 // After the element was added to the DOM, we initialize docsearch. 
 
