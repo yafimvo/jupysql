@@ -95,7 +95,8 @@ use_jupyterbook_latex = True
 use_multitoc_numbering = True
 
 
-# Adding Algolia search to jupyter-book : https://github.com/sphinx-doc/sphinx/issues/3812#issuecomment-491256702
+# Adding Algolia search to jupyter-book :
+# https://github.com/sphinx-doc/sphinx/issues/3812#issuecomment-491256702
 # Please note this is an old thread and they are working with v2 which is a legacy.
 # In order to make it work with v3 we made some changes.
 # Please see algolia.css and algolia.js files to read more about these changes.
