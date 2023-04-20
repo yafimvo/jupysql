@@ -1,10 +1,14 @@
 # CHANGELOG
 
-## 0.7.1dev
-* [Fix] Fix `%sqlcmd columns` in MySQL and MariaDB
-* [Doc] Updating connecting guide (by @DaveOkpare) (#56)
+## 0.7.2dev
+
+## 0.7.1 (2023-04-19)
 
 * [Feature] Upgrades SQLAlchemy version to 2
+* [Fix] Fix `%sqlcmd columns` in MySQL and MariaDB
+* [Fix] `%sqlcmd --test` improved, changes in logic and addition of user guide ([#275](https://github.com/ploomber/jupysql/issues/275))
+* [Doc] Algolia search added ([#64](https://github.com/ploomber/jupysql/issues/64))
+* [Doc] Updating connecting guide (by [@DaveOkpare](https://github.com/DaveOkpare)) ([#56](https://github.com/ploomber/jupysql/issues/56))
 
 ## 0.7.0 (2023-04-05)
 
