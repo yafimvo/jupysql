@@ -38,6 +38,17 @@ except ImportError:
 
 from sql.telemetry import telemetry
 
+from IPython import get_ipython
+
+try:
+    from comm import get_comm_manager
+except ImportError:
+    def get_comm_manager():
+        ip = get_ipython()
+
+        if ip is not None and getattr(ip, "kernel", None) is not None:
+            return get_ipython().kernel.comm_manager
+
 SUPPORT_INTERACTIVE_WIDGETS = ["Checkbox", "Text", "IntSlider", ""]
 
 
@@ -455,5 +466,44 @@ def load_ipython_extension(ip):
     ip.register_magics(SqlPlotMagic)
     ip.register_magics(SqlCmdMagic)
 
+    # run our custom code here...
+    # register_comm_target()
+    get_ipython().kernel.comm_manager.register_target('myTarget', target_func)
+
 
 # %%
+
+def _handle_msg(msg):
+    print("got message : ", msg)
+
+
+def _open_comm(comm, msg):
+    print("open comm with message : ", msg)
+    # register callback
+    comm.on_msg(_handle_msg)
+
+
+def register_comm_target(kernel=None):
+    """Register the jupyter.widget comm target"""
+    print("register_comm_target started")
+
+    comm_manager = get_comm_manager()
+    print("comm_manager is ready ", comm_manager)
+
+    comm_manager.register_target('myTarget', _open_comm)
+    print("done.")
+
+
+def target_func(comm, open_msg):
+    # comm is the kernel Comm instance
+    # msg is the comm_open message
+
+    # Register handler for later messages
+    @comm.on_msg
+    def _recv(msg):
+        # Use msg['content']['data'] for the data in the message
+        print("message ", msg)
+        comm.send({'echo': msg['content']['data']})
+
+    # Send data to the frontend on creation
+    comm.send({'foo': 5})
