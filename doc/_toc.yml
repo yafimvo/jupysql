@@ -31,7 +31,7 @@ parts:
       - file: integrations/mindsdb
       - file: integrations/postgres-connect
       - file: integrations/compatibility
-      - file: integrations/db-api
+      - file: integrations/questdb
 
   - caption: API Reference
     chapters:

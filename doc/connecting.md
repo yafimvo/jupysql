@@ -91,7 +91,7 @@ Check out our guide for connecting to a database:
 - [MindsDB](integrations/mindsdb)
 - [MSSQL](integrations/mssql)
 - [MySQL](integrations/mysql)
-- [QuestDB](integrations/db-api)
+- [QuestDB](integrations/questdb)
 
 +++
 
@@ -328,7 +328,7 @@ You're all set
 %sql select * from penguins.csv limit 3
 ```
 
-For a more detailed example please see [QuestDB tutorial](integrations/db-api.ipynb)
+For a more detailed example please see [QuestDB tutorial](integrations/questdb.ipynb)
 
 ## Conclusion
 
@@ -342,4 +342,4 @@ Vendor-specific details are available in our tutorials:
 - [MindsDB](integrations/mindsdb)
 - [MSSQL](integrations/mssql)
 - [MySQL](integrations/mysql)
-- [QuestDB](integrations/db-api)
+- [QuestDB](integrations/questdb)
