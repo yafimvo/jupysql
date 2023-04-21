@@ -220,7 +220,7 @@ def flatten(src, ltypes=(list, tuple)):
                 i -= 1
                 break
             else:
-                process_list[i: i + 1] = process_list[i]
+                process_list[i : i + 1] = process_list[i]
         i += 1
 
     # If input src data type is tuple, return tuple
