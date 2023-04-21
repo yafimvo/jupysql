@@ -286,7 +286,7 @@ SELECT * FROM numbers
 
 ## Custom Connection
 
-```{versionadded} 0.7.1
+```{versionadded} 0.7.2
 ```
 
 If you are using a database that is not supported by SQLAlchemy but follows the [DB API 2.0 specification](https://peps.python.org/pep-0249/), you can still use JupySQL.
