@@ -20,7 +20,7 @@ def parse_sql_to_json(rows, columns) -> str:
     return rows_json
 
 
-def fetch_sql_with_pagination(table, offset, n_rows) -> tuple():
+def fetch_sql_with_pagination(table, offset, n_rows, with_=None) -> tuple():
     """
     Returns next n_rows and columns from table starting at the offset
 
@@ -28,9 +28,7 @@ def fetch_sql_with_pagination(table, offset, n_rows) -> tuple():
     """
     query = f"SELECT * FROM {table} OFFSET {offset} ROWS FETCH NEXT {n_rows} ROWS ONLY"
 
-    # TODO Change this to match custom drivers
-    query = Connection.current._transpile_query(query)
-    rows = Connection.current.session.execute(sqlalchemy.sql.text(query)).fetchall()
+    rows = Connection.current.execute(query, with_).fetchall()
 
     columns = sql.run.raw_run(
         Connection.current, f"SELECT * FROM {table} WHERE 1=0"
