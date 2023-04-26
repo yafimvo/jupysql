@@ -403,33 +403,35 @@ def init_table(table) -> None:
                             let ths =
                             Object.keys(row).map(col =>
                             `<th>
-                                <span>${{col}}</span>
-                                <span>
-                                    <button
-                                        class = "sort-button"
-                                        onclick='sortColumnClick("${{col}}", "ASC",
-                                        (rows) => {{
-                                            updateTable({rows_per_page}, rows);
-                                            removeSelectionFromAllSortButtons()
-                                            this.className += " selected"
-                                            }}
-                                        )'
-                                        title="Sort"
-                                        >▴
-                                    </button>
-                                    <button
-                                        class = "sort-button"
-                                        onclick='sortColumnClick("${{col}}", "DESC",
-                                        (rows) => {{
-                                            updateTable({rows_per_page}, rows);
-                                            removeSelectionFromAllSortButtons()
-                                            this.className += " selected"
-                                            }}
-                                        )'
-                                        title="Sort"
-                                        >▾
-                                    </button>
-                                </span>
+                                <div style="display: inline-flex; height: 30px">
+                                    <span style="line-height: 40px">${{col}}</span>
+                                    <span style="width: 40px;">
+                                        <button
+                                            class = "sort-button"
+                                            onclick='sortColumnClick("${{col}}", "ASC",
+                                            (rows) => {{
+                                                updateTable({rows_per_page}, rows);
+                                                removeSelectionFromAllSortButtons()
+                                                this.className += " selected"
+                                                }}
+                                            )'
+                                            title="Sort"
+                                            >▴
+                                        </button>
+                                        <button
+                                            class = "sort-button"
+                                            onclick='sortColumnClick("${{col}}", "DESC",
+                                            (rows) => {{
+                                                updateTable({rows_per_page}, rows);
+                                                removeSelectionFromAllSortButtons()
+                                                this.className += " selected"
+                                                }}
+                                            )'
+                                            title="Sort"
+                                            >▾
+                                        </button>
+                                    </span>
+                                </div>
 
                                 </th>`).join("");
                             let thead = tableContainer.querySelector("thead")

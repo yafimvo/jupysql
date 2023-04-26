@@ -1,6 +1,7 @@
 # CHANGELOG
 
 ## 0.7.2dev
+* [Feature] `%sqlcmd explore` added (#330)
 * [Feature] Support for DB API 2.0 drivers (#350)
 * [Feature] Improve boxplot performance (#152)
 * [Fix] Modifies some errors so only the error message is displayed (and traceback is hidden) (#407)
