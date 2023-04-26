@@ -20,13 +20,20 @@ def parse_sql_to_json(rows, columns) -> str:
     return rows_json
 
 
-def fetch_sql_with_pagination(table, offset, n_rows, with_=None) -> tuple():
+def fetch_sql_with_pagination(
+    table, offset, n_rows, with_=None, sort_column=None, sort_order=None
+) -> tuple():
     """
     Returns next n_rows and columns from table starting at the offset
 
     https://stackoverflow.com/questions/109232/what-is-the-best-way-to-paginate-results-in-sql-server
     """
-    query = f"SELECT * FROM {table} OFFSET {offset} ROWS FETCH NEXT {n_rows} ROWS ONLY"
+
+    order_by = "" if not sort_column else f"ORDER BY {sort_column} {sort_order}"
+
+    query = f"""
+    SELECT * FROM {table} {order_by}
+    OFFSET {offset} ROWS FETCH NEXT {n_rows} ROWS ONLY"""
 
     rows = Connection.current.execute(query, with_).fetchall()
 
@@ -60,9 +67,18 @@ def init_table(table) -> None:
             n_rows = data["nRows"]
             page = data["page"]
 
+            sort_column = None
+            sort_order = None
+            if "sort" in data:
+                sort = data["sort"]
+                sort_column = sort["column"]
+                sort_order = sort["order"]
+
             offset = page * n_rows
 
-            rows, columns = fetch_sql_with_pagination(table, offset, n_rows)
+            rows, columns = fetch_sql_with_pagination(
+                table, offset, n_rows, sort_column=sort_column, sort_order=sort_order
+            )
             rows_json = parse_sql_to_json(rows, columns)
 
             comm.send({"rows": rows_json})
@@ -84,6 +100,16 @@ def init_table(table) -> None:
         HTML(
             """
         <style>
+            .sort-button {
+                background: none;
+                border: none;
+            }
+
+            .sort-button.selected {
+                background: #efefef;
+                border: 1px solid #767676;
+            }
+
             #pagesButtons button.selected {
                 background: #efefef;
                 border: 1px solid #767676;
@@ -107,18 +133,33 @@ def init_table(table) -> None:
         HTML(
             f"""
         <script>
-            function fetchTableData(page, rowsPerPage, callback) {{
+
+            function sortColumnClick(column, order, callback) {{
+                // fetch data with sort logic
+                sort = {{
+                            'column' : column,
+                            'order' : order
+                        }}
+                fetchTableData(undefined, undefined, callback, sort)
+            }}
+
+            function fetchTableData(page, rowsPerPage, callback, sort) {{
                 const comm =
                 Jupyter.notebook.kernel.comm_manager.new_comm('comm_target', {{}})
 
-                comm.send({{
-                        'nRows' : rowsPerPage,
-                        'page': page
-                        }})
+                sendObject = {{
+                    'nRows' : 10,
+                    'page': 0,
+                }}
+
+                if (sort) {{
+                    sendObject.sort = sort
+                }}
+
+                comm.send(sendObject)
 
                 comm.on_msg(function(msg) {{
                     const rows = JSON.parse(msg.content.data['rows']);
-                    console.log(rows)
                     if (callback) {{
                         callback(rows)
                     }}
@@ -301,6 +342,11 @@ def init_table(table) -> None:
                 document.querySelector("#pagesButtons").innerHTML = buttonsHtml;
             }}
 
+            function removeSelectionFromAllSortButtons() {{
+                document.querySelectorAll(".sort-button")
+                .forEach(el => el.classList.remove("selected"))
+            }}
+
             function initTable() {{
                 const options = [10, 25, 50, 100];
                 options_html =
@@ -309,7 +355,7 @@ def init_table(table) -> None:
                 let ths = {list(columns)}.map(col => `<th>${{col}}</th>`).join("");
 
                 let table = `
-                <div style="display: inline-flex">
+                <div>
                     <span style="margin-right: 5px">Show</span>
                     <select
                     onchange="handleRowsNumberOfRowsChange(this)">
@@ -347,7 +393,6 @@ def init_table(table) -> None:
 
                 let tableContainer = document.querySelector("#tableContainer");
                 tableContainer.innerHTML = table
-
                 setTimeout(() => {{
                     fetchTableData(0, {rows_per_page}, (rows) => {{
                         updateTable({rows_per_page}, rows);
@@ -356,7 +401,37 @@ def init_table(table) -> None:
                         if (rows.length > 0) {{
                             let row = rows[0];
                             let ths =
-                            Object.keys(row).map(col => `<th>${{col}}</th>`).join("");
+                            Object.keys(row).map(col =>
+                            `<th>
+                                <span>${{col}}</span>
+                                <span>
+                                    <button
+                                        class = "sort-button"
+                                        onclick='sortColumnClick("${{col}}", "ASC",
+                                        (rows) => {{
+                                            updateTable({rows_per_page}, rows);
+                                            removeSelectionFromAllSortButtons()
+                                            this.className += " selected"
+                                            }}
+                                        )'
+                                        title="Sort"
+                                        >▴
+                                    </button>
+                                    <button
+                                        class = "sort-button"
+                                        onclick='sortColumnClick("${{col}}", "DESC",
+                                        (rows) => {{
+                                            updateTable({rows_per_page}, rows);
+                                            removeSelectionFromAllSortButtons()
+                                            this.className += " selected"
+                                            }}
+                                        )'
+                                        title="Sort"
+                                        >▾
+                                    </button>
+                                </span>
+
+                                </th>`).join("");
                             let thead = tableContainer.querySelector("thead")
                             thead.innerHTML = ths
                         }}
