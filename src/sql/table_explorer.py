@@ -1,57 +1,30 @@
 from sql.connection import Connection
-import sql
 from IPython.display import display, HTML
 from IPython import get_ipython
 import math
 import sqlalchemy
-import json
 import time
-
-
-def parse_sql_to_json(rows, columns) -> str:
-    """
-    Serialize sql rows to a JSON formatted ``str``
-    """
-    # parse data to json
-    dicts = [dict(zip(list(columns), row)) for row in rows]
-    rows_json = json.dumps(dicts, indent=4, sort_keys=True, default=str).replace(
-        "null", '"None"'
-    )
-
-    return rows_json
-
-
-def fetch_sql_with_pagination(
-    table, offset, n_rows, with_=None, sort_column=None, sort_order=None
-) -> tuple():
-    """
-    Returns next n_rows and columns from table starting at the offset
-
-    https://stackoverflow.com/questions/109232/what-is-the-best-way-to-paginate-results-in-sql-server
-    """
-
-    order_by = "" if not sort_column else f"ORDER BY {sort_column} {sort_order}"
-
-    query = f"""
-    SELECT * FROM {table} {order_by}
-    OFFSET {offset} ROWS FETCH NEXT {n_rows} ROWS ONLY"""
-
-    rows = Connection.current.execute(query, with_).fetchall()
-
-    columns = sql.run.raw_run(
-        Connection.current, f"SELECT * FROM {table} WHERE 1=0"
-    ).keys()
-
-    return rows, columns
+from sql.util import (
+    fetch_sql_with_pagination,
+    parse_sql_results_to_json,
+    is_table_exists,
+)
 
 
 def init_table(table) -> None:
     """
     Display an HTML table connected to a SQL engine
+
+    Parameters
+    ----------
+    table str
+        SQL Table name
     """
 
+    is_table_exists(table)
+
     rows, columns = fetch_sql_with_pagination(table, 0, 10)
-    rows_json = parse_sql_to_json(rows, columns)
+    rows_json = parse_sql_results_to_json(rows, columns)
 
     query = f"SELECT count(*) FROM {table}"
     n_total = Connection.current.session.execute(sqlalchemy.sql.text(query)).fetchone()[
@@ -87,7 +60,7 @@ def init_table(table) -> None:
                 sort_column=sort_column,
                 sort_order=sort_order,
             )
-            rows_json = parse_sql_to_json(rows, columns)
+            rows_json = parse_sql_results_to_json(rows, columns)
 
             comm.send({"rows": rows_json})
 
