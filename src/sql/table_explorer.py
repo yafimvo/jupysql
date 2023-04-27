@@ -5,6 +5,7 @@ from IPython import get_ipython
 import math
 import sqlalchemy
 import json
+import time
 
 
 def parse_sql_to_json(rows, columns) -> str:
@@ -56,6 +57,7 @@ def init_table(table) -> None:
     n_total = Connection.current.session.execute(sqlalchemy.sql.text(query)).fetchone()[
         0
     ]
+    table_name = table.strip('"').strip("'")
 
     rows_per_page = 10
     n_pages = math.ceil(n_total / rows_per_page)
@@ -69,6 +71,8 @@ def init_table(table) -> None:
 
             sort_column = None
             sort_order = None
+            table_name = data["table"]
+
             if "sort" in data:
                 sort = data["sort"]
                 sort_column = sort["column"]
@@ -77,7 +81,11 @@ def init_table(table) -> None:
             offset = page * n_rows
 
             rows, columns = fetch_sql_with_pagination(
-                table, offset, n_rows, sort_column=sort_column, sort_order=sort_order
+                table_name,
+                offset,
+                n_rows,
+                sort_column=sort_column,
+                sort_order=sort_order,
             )
             rows_json = parse_sql_to_json(rows, columns)
 
@@ -87,10 +95,13 @@ def init_table(table) -> None:
     get_ipython().kernel.comm_manager.register_target("comm_target", front_listener)
 
     # output container
+    unique_id = str(int(time.time()))
+    table_container_id = f"tableContainer_{unique_id}"
+
     display(
         HTML(
-            """
-        <div id="tableContainer"></div>
+            f"""
+        <div id="{table_container_id}" class="table-container"></div>
         """
         )
     )
@@ -110,12 +121,12 @@ def init_table(table) -> None:
                 border: 1px solid #767676;
             }
 
-            #pagesButtons button.selected {
+            .pages-buttons button.selected {
                 background: #efefef;
                 border: 1px solid #767676;
                 border-radius: 2px;
             }
-            #pagesButtons button {
+            .pages-buttons button {
                 background: none;
                 border: none;
                 padding: 0 10px;
@@ -133,33 +144,79 @@ def init_table(table) -> None:
         HTML(
             f"""
         <script>
+            function getTable(element) {{
+                let table;
+                if (element) {{
+                    const tableContainer = element.closest(".table-container");
+                    table = tableContainer.querySelector("table");
+                }} else {{
+                    table = document.querySelector(".code_cell.selected table");
+                }}
 
-            function sortColumnClick(column, order, callback) {{
-                // fetch data with sort logic
-                sort = {{
-                            'column' : column,
-                            'order' : order
-                        }}
-                fetchTableData(undefined, undefined, callback, sort)
+                return table;
             }}
 
-            function fetchTableData(page, rowsPerPage, callback, sort) {{
+            function getSortDetails() {{
+                let sort = undefined;
+
+                const table = getTable();
+                if (table) {{
+                    const column = table.getAttribute("sort-by-column");
+                    const order = table.getAttribute("sort-by-order");
+
+                    if (column && order) {{
+                        sort = {{
+                            "column" : column,
+                            "order" : order
+                        }}
+                    }}
+                }}
+
+                return sort;
+            }}
+
+            function sortColumnClick(element, column, order, callback) {{
+                // fetch data with sort logic
+                const table = getTable(element);
+                table.setAttribute("sort-by-column", column);
+                table.setAttribute("sort-by-order", order);
+                const rowsPerPage = table.getAttribute("rows-per-page");
+                const currrPage = table.getAttribute("curr-page-idx");
+
+                const sort = {{
+                    'column' : column,
+                    'order' : order
+                }}
+
+                const fetchParameters = {{
+                    rowsPerPage : parseInt(rowsPerPage),
+                    page : parseInt(currrPage),
+                    sort : sort,
+                    table : table.getAttribute("table-name")
+                }}
+
+                fetchTableData(fetchParameters, callback)
+            }}
+
+            function fetchTableData(fetchParameters, callback) {{
                 const comm =
                 Jupyter.notebook.kernel.comm_manager.new_comm('comm_target', {{}})
 
                 sendObject = {{
-                    'nRows' : 10,
-                    'page': 0,
+                    'nRows' : fetchParameters.rowsPerPage,
+                    'page': fetchParameters.page,
+                    'table' : fetchParameters.table
                 }}
 
-                if (sort) {{
-                    sendObject.sort = sort
+                if (fetchParameters.sort) {{
+                    sendObject.sort = fetchParameters.sort
                 }}
 
                 comm.send(sendObject)
 
                 comm.on_msg(function(msg) {{
                     const rows = JSON.parse(msg.content.data['rows']);
+                    console.log("rows : ", rows)
                     if (callback) {{
                         callback(rows)
                     }}
@@ -169,7 +226,7 @@ def init_table(table) -> None:
             function handleRowsNumberOfRowsChange(e) {{
                 const rows = {rows_json};
                 const rowsPerPage = parseInt(e.value);
-                let table = document.querySelector('#resultsTable');
+                let table = getTable();
                 table.setAttribute('rows-per-page', rowsPerPage);
 
                 const nTotal = table.getAttribute('n-total');
@@ -177,16 +234,24 @@ def init_table(table) -> None:
                 const maxPages = Math.ceil(nTotal / rowsPerPage)
                 table.setAttribute('max-pages', maxPages);
 
+                const fetchParameters = {{
+                    rowsPerPage : rowsPerPage,
+                    page : 0,
+                    sort : getSortDetails(),
+                    table : table.getAttribute("table-name")
+                }}
+
                 setTimeout(() => {{
-                    fetchTableData(0, rowsPerPage, (rows) => {{
+                    fetchTableData(fetchParameters, (rows) => {{
                         updateTable(rowsPerPage, rows);
                     }})
                 }}, 100);
             }}
 
-            function updateTable(rowsPerPage, rows) {{
-                const trs = document.querySelectorAll("#resultsTable tbody tr");
-                const tbody = document.querySelector("#resultsTable tbody");
+            function updateTable(rowsPerPage, rows, currPage, tableToUpdate) {{
+                const table = tableToUpdate || getTable();
+                const trs = table.querySelectorAll("tbody tr");
+                const tbody = table.querySelector("tbody");
                 tbody.innerHTML = "";
 
                 const _html = rows.map(row => {{
@@ -198,14 +263,14 @@ def init_table(table) -> None:
                 tbody.innerHTML = _html
 
                 setTimeout(() => {{
-                    updatePaginationBar(0)
+                    updatePaginationBar(table, currPage || 0)
                 }}, 100)
             }}
 
             function showTablePage(page, rowsPerPage, data) {{
-                const table = document.getElementById("resultsTable");
-                const trs = document.querySelectorAll("#resultsTable tbody tr");
-                const tbody = document.querySelector("#resultsTable tbody");
+                const table = getTable();
+                const trs = table.querySelectorAll("tbody tr");
+                const tbody = table.querySelector("tbody");
                 tbody.innerHTML = "";
 
                 const rows = data;
@@ -220,18 +285,25 @@ def init_table(table) -> None:
                 tbody.innerHTML = _html;
 
                 table.setAttribute("curr-page-idx", page);
-                updatePaginationBar(page);
+                updatePaginationBar(table, page);
             }}
 
-            function nextPageClick() {{
-                const table = document.getElementById("resultsTable");
+            function nextPageClick(element) {{
+                const table = getTable(element);
                 const currPageIndex = parseInt(table.getAttribute("curr-page-idx"));
                 const rowsPerPage = parseInt(table.getAttribute("rows-per-page"));
                 const maxPages = parseInt(table.getAttribute("max-pages"));
 
                 const nextPage = currPageIndex + 1;
                 if (nextPage < maxPages) {{
-                    fetchTableData(nextPage, rowsPerPage, (rows) => {{
+                    const fetchParameters = {{
+                        rowsPerPage : rowsPerPage,
+                        page : nextPage,
+                        sort : getSortDetails(),
+                        table : table.getAttribute("table-name")
+                    }}
+
+                    fetchTableData(fetchParameters, (rows) => {{
                         showTablePage(nextPage, rowsPerPage, rows)
                     }});
                 }}
@@ -239,25 +311,37 @@ def init_table(table) -> None:
             }}
 
             function prevPageClick() {{
-                const table = document.getElementById("resultsTable");
+                const table = getTable();
                 const currPageIndex = parseInt(table.getAttribute("curr-page-idx"));
                 const rowsPerPage = parseInt(table.getAttribute("rows-per-page"));
                 const prevPage = currPageIndex - 1;
                 if (prevPage >= 0) {{
-                    fetchTableData(prevPage, rowsPerPage, (rows) => {{
+                    const fetchParameters = {{
+                        rowsPerPage : rowsPerPage,
+                        page : prevPage,
+                        sort : getSortDetails(),
+                        table : table.getAttribute("table-name")
+                    }}
+
+                    fetchTableData(fetchParameters, (rows) => {{
                         showTablePage(prevPage, rowsPerPage, rows)
                     }});
                 }}
             }}
 
-            function setPageButton(label, navigateTo, isSelected) {{
-                const table = document.getElementById("resultsTable");
+            function setPageButton(table, label, navigateTo, isSelected) {{
                 const rowsPerPage = parseInt(table.getAttribute("rows-per-page"));
                 const selected = isSelected ? "selected" : "";
 
                 const button = `
                 <button class="${{selected}}"
-                        onclick="fetchTableData(${{navigateTo}}, ${{rowsPerPage}},
+                        onclick="
+                        fetchTableData({{
+                            rowsPerPage : ${{rowsPerPage}},
+                            page : ${{navigateTo}},
+                            sort : getSortDetails(),
+                            table : getTable(this).getAttribute('table-name')
+                        }},
                         (rows) => {{
                             showTablePage(${{navigateTo}}, ${{rowsPerPage}}, rows);
                             }})"
@@ -268,8 +352,7 @@ def init_table(table) -> None:
                 return button;
             }}
 
-            function updatePaginationBar(currPage) {{
-                const table = document.getElementById("resultsTable");
+            function updatePaginationBar(table, currPage) {{
                 const maxPages = parseInt(table.getAttribute("max-pages"));
                 const maxPagesInRow = 6;
                 const rowsPerPage = parseInt(table.getAttribute("rows-per-page"));
@@ -283,7 +366,7 @@ def init_table(table) -> None:
 
                 // add first
                 let selected = currPage === 0;
-                buttonsArray.push(setPageButton("1", 0, selected));
+                buttonsArray.push(setPageButton(table, "1", 0, selected));
 
                 for (i = 1; i < maxPages - 1; i++) {{
                     const navigateTo = i;
@@ -295,7 +378,7 @@ def init_table(table) -> None:
                     if (inStartRange) {{
                         if (i < maxPagesInRow) {{
                             buttonsArray
-                            .push(setPageButton(label, navigateTo, selected));
+                            .push(setPageButton(table, label, navigateTo, selected));
                         }} else {{
                         if (!startEllipsisAdded) {{
                             buttonsArray.push("...");
@@ -305,7 +388,7 @@ def init_table(table) -> None:
                     }} else if (inEndRange) {{
                         if (maxPages - 1 - i < maxPagesInRow) {{
                             buttonsArray
-                            .push(setPageButton(label, navigateTo, selected));
+                            .push(setPageButton(table, label, navigateTo, selected));
                         }} else {{
                         if (!endEllipsisAdded) {{
                             buttonsArray.push("...");
@@ -324,7 +407,7 @@ def init_table(table) -> None:
                             currPage === i + 1
                         ) {{
                             buttonsArray
-                            .push(setPageButton(label, navigateTo, selected))
+                            .push(setPageButton(table, label, navigateTo, selected))
                         }}
 
                         if (currPage === i+2) {{
@@ -336,10 +419,12 @@ def init_table(table) -> None:
 
                 selected = currPage === maxPages - 1 ? "selected" : "";
 
-                buttonsArray.push(setPageButton(maxPages, maxPages - 1, selected))
+                buttonsArray.
+                push(setPageButton(table, maxPages, maxPages - 1, selected))
 
                 const buttonsHtml = buttonsArray.join("");
-                document.querySelector("#pagesButtons").innerHTML = buttonsHtml;
+                table.parentNode
+                .querySelector(".pages-buttons").innerHTML = buttonsHtml;
             }}
 
             function removeSelectionFromAllSortButtons() {{
@@ -366,11 +451,13 @@ def init_table(table) -> None:
 
                 <table
                     id="resultsTable"
+                    class="explore-table"
                     style='width:100%'
                     curr-page-idx=0
                     rows-per-page={rows_per_page}
                     max-pages = {n_pages}
                     n-total={n_total}
+                    table-name={table_name}
                 >
                     <thead>
                         <tr>
@@ -384,18 +471,29 @@ def init_table(table) -> None:
 
 
                 <div>
-                    <button onclick="prevPageClick()">Previous</button>
-                    <div id = "pagesButtons" style = "display: inline-flex">
+                    <button onclick="prevPageClick(this)">Previous</button>
+                    <div
+                        id = "pagesButtons"
+                        class = "pages-buttons"
+                        style = "display: inline-flex">
                     </div>
-                    <button onclick="nextPageClick()">Next</button>
+                    <button onclick="nextPageClick(this)">Next</button>
                 </div>
                 `
 
-                let tableContainer = document.querySelector("#tableContainer");
+                let tableContainer = document.querySelector("#{table_container_id}");
                 tableContainer.innerHTML = table
                 setTimeout(() => {{
-                    fetchTableData(0, {rows_per_page}, (rows) => {{
-                        updateTable({rows_per_page}, rows);
+                    const fetchParameters = {{
+                        rowsPerPage : {rows_per_page},
+                        page : 0,
+                        sort : getSortDetails(),
+                        table : "{table_name}"
+                    }}
+
+                    fetchTableData(fetchParameters, (rows) => {{
+                        updateTable({rows_per_page}, rows, 0,
+                                    tableContainer.querySelector("table"));
                         // update ths to make sure order columns
                         // are matching the data
                         if (rows.length > 0) {{
@@ -408,9 +506,14 @@ def init_table(table) -> None:
                                     <span style="width: 40px;">
                                         <button
                                             class = "sort-button"
-                                            onclick='sortColumnClick("${{col}}", "ASC",
+                                            onclick='sortColumnClick(this,
+                                            "${{col}}", "ASC",
                                             (rows) => {{
-                                                updateTable({rows_per_page}, rows);
+                                                const table = getTable(this);
+                                                const currPage =
+                                                parseInt(table.getAttribute("curr-page-idx"));
+                                                updateTable({rows_per_page},
+                                                            rows, currPage);
                                                 removeSelectionFromAllSortButtons()
                                                 this.className += " selected"
                                                 }}
@@ -420,9 +523,14 @@ def init_table(table) -> None:
                                         </button>
                                         <button
                                             class = "sort-button"
-                                            onclick='sortColumnClick("${{col}}", "DESC",
+                                            onclick='sortColumnClick(this,
+                                            "${{col}}", "DESC",
                                             (rows) => {{
-                                                updateTable({rows_per_page}, rows);
+                                                const table = getTable(this);
+                                                const currPage = parseInt(
+                                                    table.getAttribute("curr-page-idx"));
+                                                updateTable({rows_per_page},
+                                                            rows, currPage);
                                                 removeSelectionFromAllSortButtons()
                                                 this.className += " selected"
                                                 }}
