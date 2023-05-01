@@ -219,7 +219,8 @@ class SqlCmdMagic(Magics, Configurable):
             )
             args = parser.parse_args(others)
 
-            table_explorer.init_table(args.table)
+            table_explorer.init_websocket_test(args.table)
+            # table_explorer.init_table(args.table)
 
 
 def return_test_results(args, conn, query):
