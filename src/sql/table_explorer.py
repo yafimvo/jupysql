@@ -581,6 +581,7 @@ def init_websocket_test(table):
 
 
 def _display_ui(port, table):
+    ip = _get_connection_ip()
 
     rows, columns = fetch_sql_with_pagination(table, 0, 10)
     rows_json = parse_sql_results_to_json(rows, columns)
@@ -701,7 +702,7 @@ def _display_ui(port, table):
 
             function fetchTableData(fetchParameters, callback) {{
                 
-                var socket = new WebSocket(`ws://localhost:{port}`);
+                var socket = new WebSocket(`wss://{ip}:{port}`);
     
                 socket.addEventListener('open', function (event) {{
                     sendObject = {{
@@ -1060,39 +1061,6 @@ def _display_ui(port, table):
         """
         )
     )
-
-
-def _display_ui_basic(running_port):
-    display(HTML(
-        f"""
-        <script>
-            function getDataViaWebSocket() {{
-                var socket = new WebSocket(`ws://localhost:{running_port}`);
-    
-                socket.addEventListener('open', function (event) {{
-                    sendObject = {{
-                        'nRows' : 10,
-                        'page': 4,
-                        'table' : "penguins.csv"
-                    }}
-
-                    socket.send(JSON.stringify(sendObject))
-                
-                }});
-                
-                socket.addEventListener('message', function (event) {{
-                    console.log(event.data);
-                }});            
-            }}
-        </script>
-        """
-    ))
-    # Let's attach button
-    display(HTML("""
-    <button onclick="getDataViaWebSocket()">
-        Get data
-    </button>
-    """))
 
 
 def _get_connection_ip():
