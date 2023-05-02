@@ -10,6 +10,7 @@ from sql.util import (
     is_table_exists,
 )
 import json
+import os
 
 
 def init_table(table) -> None:
@@ -568,8 +569,8 @@ def init_websocket_test(table):
 
     def start_websocket_server():
         asyncio.set_event_loop(asyncio.new_event_loop())
-        ip = _get_connection_ip()
-        start_server = websockets.serve(websocket_handler, ip, 0)
+        base_url = _get_base_url()
+        start_server = websockets.serve(websocket_handler, base_url, 0)
         asyncio.get_event_loop().run_until_complete(start_server)
         running_port = start_server.ws_server.sockets[0].getsockname()[1]
         _display_ui(running_port, table)
@@ -1069,3 +1070,24 @@ def _get_connection_ip():
     connection_info = get_connection_info()
     connection_info = json.loads(connection_info)
     return connection_info["ip"]
+
+
+# utils
+def _get_base_url():
+    if _is_binder():
+        base_url = _get_binder_hub_url()
+    else:
+        base_url = _get_connection_ip()
+
+    return base_url
+
+
+def _is_binder():
+    return 'JUPYTERHUB_SERVICE_PREFIX' in os
+
+
+def _get_binder_hub_url():
+    service_prefix = os['JUPYTERHUB_SERVICE_PREFIX']
+    binder_launch_host = os['BINDER_LAUNCH_HOST']
+    binder_launch_host = binder_launch_host.replace("https://", "https://hub.")
+    binder_hub_url = f"{binder_launch_host}{service_prefix}"
