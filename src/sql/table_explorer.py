@@ -573,7 +573,9 @@ def init_websocket_test(table):
         start_server = websockets.serve(websocket_handler, base_url, 0)
         asyncio.get_event_loop().run_until_complete(start_server)
         running_port = start_server.ws_server.sockets[0].getsockname()[1]
-        _display_ui(running_port, table)
+
+        ws_connection = _get_websocket_connection(running_port)
+        _display_ui(ws_connection, table)
         asyncio.get_event_loop().run_forever()
 
     # Create a new thread and start the WebSocket server in that thread
@@ -581,9 +583,7 @@ def init_websocket_test(table):
     websocket_thread.start()
 
 
-def _display_ui(port, table):
-    ip = _get_connection_ip()
-
+def _display_ui(ws_connection, table):
     rows, columns = fetch_sql_with_pagination(table, 0, 10)
     rows_json = parse_sql_results_to_json(rows, columns)
 
@@ -703,7 +703,7 @@ def _display_ui(port, table):
 
             function fetchTableData(fetchParameters, callback) {{
                 
-                var socket = new WebSocket(`wss://{ip}:{port}`);
+                var socket = new WebSocket(`{ws_connection}`);
     
                 socket.addEventListener('open', function (event) {{
                     sendObject = {{
@@ -1083,11 +1083,21 @@ def _get_base_url():
 
 
 def _is_binder():
-    return 'JUPYTERHUB_SERVICE_PREFIX' in os
+    return 'JUPYTERHUB_SERVICE_PREFIX' in os.environ
 
 
 def _get_binder_hub_url():
-    service_prefix = os['JUPYTERHUB_SERVICE_PREFIX']
-    binder_launch_host = os['BINDER_LAUNCH_HOST']
+    service_prefix = os.environ['JUPYTERHUB_SERVICE_PREFIX']
+    binder_launch_host = os.environ['BINDER_LAUNCH_HOST']
     binder_launch_host = binder_launch_host.replace("https://", "https://hub.")
-    binder_hub_url = f"{binder_launch_host}{service_prefix}"
+    return f"{binder_launch_host}{service_prefix}"
+
+
+def _get_websocket_connection(port):
+    prefix = "ws://"
+    if _is_binder():
+        prefix = "wss://"
+
+    base_url = _get_base_url()
+
+    return f"{prefix}{base_url}:{port}"
