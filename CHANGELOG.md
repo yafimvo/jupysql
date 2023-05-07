@@ -1,8 +1,8 @@
 # CHANGELOG
 
 ## 0.7.5dev
+* [Feature] `%sqlcmd explore` added (#330)
 * [Feature] Using native DuckDB `.df()` method when using `autopandas` 
-
 * [Doc] documenting `%sqlcmd tables`/`%sqlcmd columns`
 * [Feature] Better error messages when function used in plotting API unsupported by DB driver (#159)
 
@@ -16,8 +16,6 @@ Never deployed due to a CI error
 * [Fix] Fix `--alias` when passing an existing engine
 * [Doc] Tutorial on querying excel files with pandas and jupysql ([#423](https://github.com/ploomber/jupysql/pull/423))
 
-
-* [Feature] `%sqlcmd explore` added (#330)
 
 ## 0.7.2 (2023-04-25)
 
