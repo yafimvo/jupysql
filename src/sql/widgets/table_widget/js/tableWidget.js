@@ -352,7 +352,7 @@ function initTable() {
     </div>
 
     <table
-        class="explore-table jupysql-table-widget"
+        class="jupysql-table-widget"
         style='width:100%'
         curr-page-idx=0
         rows-per-page=${rowsPerPage}
