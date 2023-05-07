@@ -21,7 +21,8 @@ import sql.run
 from sql.util import sanitize_identifier
 from sql import exceptions
 
-from sql import table_explorer
+from sql.widgets import TableWidget
+from IPython.display import display
 
 
 class CmdParser(argparse.ArgumentParser):
@@ -219,8 +220,8 @@ class SqlCmdMagic(Magics, Configurable):
             )
             args = parser.parse_args(others)
 
-            table_explorer.init_websocket_test(args.table)
-            # table_explorer.init_table(args.table)
+            table_widget = TableWidget(args.table)
+            display(table_widget)
 
 
 def return_test_results(args, conn, query):
