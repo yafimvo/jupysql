@@ -21,7 +21,7 @@ import sql.run
 from sql.util import sanitize_identifier
 from sql import exceptions
 
-from sql.widgets import TableWidget
+from sql.jupysql_widgets import TableWidget
 from IPython.display import display
 
 

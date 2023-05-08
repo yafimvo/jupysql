@@ -10,7 +10,7 @@ from sql.util import (
 )
 from pathlib import Path
 
-from sql.widgets import utils
+from sql.jupysql_widgets import utils
 
 # Widget base dir
 BASE_DIR = Path(__file__).parent
