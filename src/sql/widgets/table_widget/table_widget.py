@@ -18,7 +18,6 @@ BASE_DIR = Path(__file__).parent
 
 
 class TableWidget:
-
     @telemetry.log_call("TableWidget-init")
     def __init__(self, table):
         """
