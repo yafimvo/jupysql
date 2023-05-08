@@ -11,12 +11,15 @@ from sql.util import (
 from pathlib import Path
 
 from sql.widgets import utils
+from sql.telemetry import telemetry
 
 # Widget base dir
 BASE_DIR = Path(__file__).parent
 
 
 class TableWidget:
+
+    @telemetry.log_call("TableWidget-init")
     def __init__(self, table):
         """
         Creates an HTML table element and populates it with SQL table
@@ -124,6 +127,9 @@ class TableWidget:
 
                 comm.send({"rows": rows_json})
 
-        get_ipython().kernel.comm_manager.register_target(
-            "comm_target_handle_table_widget", comm_handler
-        )
+        ipython = get_ipython()
+
+        if hasattr(ipython, "kernel"):
+            get_ipython().kernel.comm_manager.register_target(
+                "comm_target_handle_table_widget", comm_handler
+            )
