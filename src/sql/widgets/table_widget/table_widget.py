@@ -130,6 +130,6 @@ class TableWidget:
         ipython = get_ipython()
 
         if hasattr(ipython, "kernel"):
-            get_ipython().kernel.comm_manager.register_target(
+            ipython.kernel.comm_manager.register_target(
                 "comm_target_handle_table_widget", comm_handler
             )

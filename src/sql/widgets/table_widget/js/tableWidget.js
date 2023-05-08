@@ -10,12 +10,11 @@ function getTable(element) {
     } else {
         const _isJupyterNotebook = isJupyterNotebook();
         if (_isJupyterNotebook) {
-            table = document.querySelector("selected .table-container table");
+            table = document.querySelector(".selected .table-container table");
         } else {
             table = document.querySelector(".jp-Cell.jp-mod-active .table-container table");
         }
     }
-    console.log(table)
 
     return table;
 }
