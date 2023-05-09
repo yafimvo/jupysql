@@ -47,6 +47,8 @@ DEV = [
     "black",
     # for %%sql --interact
     "ipywidgets",
+    # for %sqlcmd explore --table
+    "js2py",
 ]
 
 # dependencies for running integration tests

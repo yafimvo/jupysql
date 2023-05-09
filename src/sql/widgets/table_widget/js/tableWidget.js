@@ -75,6 +75,7 @@ function fetchTableData(fetchParameters, callback) {
 
     const _isJupyterNotebook = isJupyterNotebook();
 
+
     if (_isJupyterNotebook) {
         // for Jupyter Notebook
         const comm =
@@ -94,6 +95,7 @@ function fetchTableData(fetchParameters, callback) {
     
         document.addEventListener('onTableWidgetRowsReady', (customEvent) => {
             const rows = JSON.parse(customEvent.detail.data.rows)
+            console.log(JSON.stringify(rows))
             controller.abort()
             if (callback) {
                 callback(rows)
@@ -147,17 +149,26 @@ function updateTable(rowsPerPage, rows, currPage, tableToUpdate) {
     const tbody = table.querySelector("tbody");
     tbody.innerHTML = "";
 
-    const _html = rows.map(row => {
-        const tds =
-        Object.keys(row).map(key => `<td>${row[key]}</td>`).join("");
-        return `<tr>${tds}</tr>`;
-    }).join("");
+    const _html = createTableRows(rows)
 
     tbody.innerHTML = _html
 
     setTimeout(() => {
         updatePaginationBar(table, currPage || 0)
     }, 100)
+}
+
+function createTableRows(rows) {
+    const _html = rows.map(function(row) {
+        const tds =
+        Object.keys(row).map(function(key) {
+
+            return "<td>" + row[key] + "</td>"
+        }).join("") ;
+        return "<tr>" + tds + "</tr>";
+    }).join("");
+
+    return _html
 }
 
 function showTablePage(page, rowsPerPage, data) {
@@ -326,13 +337,14 @@ function removeSelectionFromAllSortButtons() {
 
 function initTable() {
     // template variables we should pass
+    const initialRows = {{initialRows}};
     const columns = {{columns}};
     const rowsPerPage={{rows_per_page}};
     const nPages={{n_pages}};
     const nTotal={{n_total}};
     const tableName="{{table_name}}";
     const tableContainerId = "{{table_container_id}}";
-
+    console.log(JSON.stringify(initialRows))
     const options = [10, 25, 50, 100];
     options_html =
     options.map(option => `<option value=${option}>${option}</option>`);
@@ -384,70 +396,81 @@ function initTable() {
     let tableContainer = document.querySelector(`#${tableContainerId}`);
 
     tableContainer.innerHTML = table
-    setTimeout(() => {
-        const fetchParameters = {
-            rowsPerPage : rowsPerPage,
-            page : 0,
-            sort : getSortDetails(),
-            table : tableName
-        }
 
-        fetchTableData(fetchParameters, (rows) => {
-            updateTable(rowsPerPage, rows, 0,
-                        tableContainer.querySelector("table"));
-            // update ths to make sure order columns
-            // are matching the data
-            if (rows.length > 0) {
-                let row = rows[0];
-                let ths =
-                Object.keys(row).map(col =>
-                `<th>
-                    <div style="display: inline-flex; height: 30px">
-                        <span style="line-height: 40px">${col}</span>
-                        <span style="width: 40px;">
-                            <button
-                                class = "sort-button"
-                                onclick='sortColumnClick(this,
-                                "${col}", "ASC",
-                                (rows) => {
-                                    const table = getTable(this);
-                                    const currPage =
-                                    parseInt(table.getAttribute("curr-page-idx"));
-                                    updateTable(${rowsPerPage},
-                                                rows, currPage);
-                                    removeSelectionFromAllSortButtons()
-                                    this.className += " selected"
-                                    }
-                                )'
-                                title="Sort"
-                                >▴
-                            </button>
-                            <button
-                                class = "sort-button"
-                                onclick='sortColumnClick(this,
-                                "${col}", "DESC",
-                                (rows) => {
-                                    const table = getTable(this);
-                                    const currPage = parseInt(
-                                        table.getAttribute("curr-page-idx"));
-                                    updateTable(${rowsPerPage},
-                                                rows, currPage);
-                                    removeSelectionFromAllSortButtons()
-                                    this.className += " selected"
-                                    }
-                                )'
-                                title="Sort"
-                                >▾
-                            </button>
-                        </span>
-                    </div>
+    if (initialRows) {
+        initializeTableRows(tableContainer, rowsPerPage, initialRows)
 
-                    </th>`).join("");
-                let thead = tableContainer.querySelector("thead")
-                thead.innerHTML = ths
+    } else {
+        setTimeout(() => {
+            const fetchParameters = {
+                rowsPerPage : rowsPerPage,
+                page : 0,
+                sort : getSortDetails(),
+                table : tableName
             }
-        })
-    }, 100);
+
+            fetchTableData(fetchParameters, (rows) => {
+                initializeTableRows(tableContainer, rowsPerPage, rows)
+            })
+        }, 100);
+    }
+    
+}
+
+function initializeTableRows(tableContainer, rowsPerPage, rows) {
+    updateTable(rowsPerPage, rows, 0,
+        tableContainer.querySelector("table"));
+    // update ths to make sure order columns
+    // are matching the data
+    if (rows.length > 0) {
+        let row = rows[0];
+        let ths =
+        Object.keys(row).map(col =>
+        `<th>
+            <div style="display: inline-flex; height: 30px">
+                <span style="line-height: 40px">${col}</span>
+                <span style="width: 40px;">
+                    <button
+                        class = "sort-button"
+                        onclick='sortColumnClick(this,
+                        "${col}", "ASC",
+                        (rows) => {
+                            const table = getTable(this);
+                            const currPage =
+                            parseInt(table.getAttribute("curr-page-idx"));
+                            updateTable(${rowsPerPage},
+                                        rows, currPage);
+                            removeSelectionFromAllSortButtons()
+                            this.className += " selected"
+                            }
+                        )'
+                        title="Sort"
+                        >▴
+                    </button>
+                    <button
+                        class = "sort-button"
+                        onclick='sortColumnClick(this,
+                        "${col}", "DESC",
+                        (rows) => {
+                            const table = getTable(this);
+                            const currPage = parseInt(
+                                table.getAttribute("curr-page-idx"));
+                            updateTable(${rowsPerPage},
+                                        rows, currPage);
+                            removeSelectionFromAllSortButtons()
+                            this.className += " selected"
+                            }
+                        )'
+                        title="Sort"
+                        >▾
+                    </button>
+                </span>
+            </div>
+
+            </th>`).join("");
+        let thead = tableContainer.querySelector("thead")
+        thead.innerHTML = ths
+    }
 }
 
 initTable()

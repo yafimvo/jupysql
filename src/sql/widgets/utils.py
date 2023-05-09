@@ -1,3 +1,4 @@
+import re
 from jinja2 import Template
 
 
@@ -65,3 +66,27 @@ def set_template_params(**kwargs):
                                     )
     """
     return kwargs
+
+
+def extract_function_by_name(source, function_name) -> str:
+    """
+    Return function str by name from string
+
+    Parameters
+    ----------
+    source : str
+        Text to extract JS function from
+
+    function_name : str
+        The name of the function to extract
+    """
+    pattern = (
+        r"function\s+"
+        + function_name
+        + r"\s*\([^)]*\)\s*\{((?:[^{}]+|\{(?:[^{}]+|\{[^{}]*\})*\})*)\}"
+    )
+    match = re.search(pattern, source)
+    if match:
+        return match.group(0)
+    else:
+        return None

@@ -42,6 +42,9 @@ class TableWidget:
         # register listener for jupyter lab
         self.register_comm()
 
+        # load_tests
+        self.load_tests()
+
     def _repr_html_(self):
         return self.html
 
@@ -53,7 +56,8 @@ class TableWidget:
         Creates an HTML table with default data
         """
         rows_per_page = 10
-        _, columns = fetch_sql_with_pagination(table, 0, rows_per_page)
+        rows, columns = fetch_sql_with_pagination(table, 0, rows_per_page)
+        rows = parse_sql_results_to_json(rows, columns)
 
         query = f"SELECT count(*) FROM {table}"
         n_total = Connection.current.session.execute(
@@ -83,10 +87,22 @@ class TableWidget:
                     table_name=table_name,
                     table_container_id=table_container_id,
                     table=table,
+                    initialRows=rows,
                 ),
             ]
         )
         self.add_to_html(html_scripts)
+
+    def load_tests(self):
+        """
+        Set which JS functionality to test.
+
+        We extract the relevant functions from the html code.
+        """
+        self.tests = dict()
+        self.tests["createTableRows"] = utils.extract_function_by_name(
+            self.html, "createTableRows"
+        )
 
     def register_comm(self):
         """
