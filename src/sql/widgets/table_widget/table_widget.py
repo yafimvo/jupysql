@@ -8,7 +8,6 @@ from sql.util import (
     parse_sql_results_to_json,
     is_table_exists,
 )
-from pathlib import Path
 
 from sql.widgets import utils
 from sql.telemetry import telemetry
