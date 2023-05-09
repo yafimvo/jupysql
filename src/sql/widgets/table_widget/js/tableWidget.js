@@ -95,7 +95,6 @@ function fetchTableData(fetchParameters, callback) {
     
         document.addEventListener('onTableWidgetRowsReady', (customEvent) => {
             const rows = JSON.parse(customEvent.detail.data.rows)
-            console.log(JSON.stringify(rows))
             controller.abort()
             if (callback) {
                 callback(rows)
@@ -138,12 +137,12 @@ function handleRowsNumberOfRowsChange(e) {
 
     setTimeout(() => {
         fetchTableData(fetchParameters, (rows) => {
-            updateTable(rowsPerPage, rows);
+            updateTable(rows);
         })
     }, 100);
 }
 
-function updateTable(rowsPerPage, rows, currPage, tableToUpdate) {
+function updateTable(rows, currPage, tableToUpdate) {
     const table = tableToUpdate || getTable();
     const trs = table.querySelectorAll("tbody tr");
     const tbody = table.querySelector("tbody");
@@ -344,7 +343,6 @@ function initTable() {
     const nTotal={{n_total}};
     const tableName="{{table_name}}";
     const tableContainerId = "{{table_container_id}}";
-    console.log(JSON.stringify(initialRows))
     const options = [10, 25, 50, 100];
     options_html =
     options.map(option => `<option value=${option}>${option}</option>`);
@@ -418,7 +416,7 @@ function initTable() {
 }
 
 function initializeTableRows(tableContainer, rowsPerPage, rows) {
-    updateTable(rowsPerPage, rows, 0,
+    updateTable(rows, 0,
         tableContainer.querySelector("table"));
     // update ths to make sure order columns
     // are matching the data
@@ -427,7 +425,7 @@ function initializeTableRows(tableContainer, rowsPerPage, rows) {
         let ths =
         Object.keys(row).map(col =>
         `<th>
-            <div style="display: inline-flex; height: 30px">
+            <div style="display: inline-flex; height: 40px">
                 <span style="line-height: 40px">${col}</span>
                 <span style="width: 40px;">
                     <button
@@ -438,8 +436,7 @@ function initializeTableRows(tableContainer, rowsPerPage, rows) {
                             const table = getTable(this);
                             const currPage =
                             parseInt(table.getAttribute("curr-page-idx"));
-                            updateTable(${rowsPerPage},
-                                        rows, currPage);
+                            updateTable(rows, currPage);
                             removeSelectionFromAllSortButtons()
                             this.className += " selected"
                             }
@@ -455,8 +452,7 @@ function initializeTableRows(tableContainer, rowsPerPage, rows) {
                             const table = getTable(this);
                             const currPage = parseInt(
                                 table.getAttribute("curr-page-idx"));
-                            updateTable(${rowsPerPage},
-                                        rows, currPage);
+                            updateTable(rows, currPage);
                             removeSelectionFromAllSortButtons()
                             this.className += " selected"
                             }

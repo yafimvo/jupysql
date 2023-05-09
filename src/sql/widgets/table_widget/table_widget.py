@@ -14,7 +14,7 @@ from sql.widgets import utils
 from sql.telemetry import telemetry
 
 # Widget base dir
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).absolute().parent
 
 
 class TableWidget:
