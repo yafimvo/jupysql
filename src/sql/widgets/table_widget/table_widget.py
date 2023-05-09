@@ -13,8 +13,10 @@ from pathlib import Path
 from sql.widgets import utils
 from sql.telemetry import telemetry
 
+import os
+
 # Widget base dir
-BASE_DIR = Path(__file__).absolute().parent
+BASE_DIR = os.path.dirname(__file__)
 
 
 class TableWidget:
