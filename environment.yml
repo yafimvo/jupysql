@@ -21,3 +21,4 @@ dependencies:
     - -e .
     # required to open .md files as nbs
     - jupytext
+  - nodejs
