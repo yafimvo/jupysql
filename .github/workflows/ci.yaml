@@ -46,7 +46,7 @@ jobs:
           # ensure we're running sqlalchemy 2
           python -c "import sqlalchemy; assert int(sqlalchemy.__version__.split('.')[0]) == 2"
           # run unit tests
-          pytest src/sql/widgets/table_widget/table_widget.py
+          pytest src/tests/test_widget.py
 
   test-sqlalchemy-v1:
     strategy:
