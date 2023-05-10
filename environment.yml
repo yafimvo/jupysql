@@ -5,7 +5,6 @@ channels:
   - conda-forge
 
 dependencies:
-  - nodejs
   - python=3.10
   - matplotlib
   - pandas
