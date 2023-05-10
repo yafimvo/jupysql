@@ -1,0 +1,24 @@
+# binder environment
+name: jupysql-binder
+
+channels:
+  - conda-forge
+
+dependencies:
+  - nodejs
+  - python=3.10
+  - matplotlib
+  - pandas
+  - pip
+  - pip:
+    - jupyter-book
+    # duckdb example
+    - duckdb
+    - duckdb-engine
+    # plot example
+    - memory-profiler
+    - pyarrow
+    # package
+    - -e .
+    # required to open .md files as nbs
+    - jupytext
