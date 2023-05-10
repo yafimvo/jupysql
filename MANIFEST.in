@@ -3,3 +3,6 @@ include NEWS.rst
 include LICENSE
 recursive-include src/sql/widgets .js
 recursive-include src/sql/widgets .css
+recursive-include src/sql/widgets *
+recursive-include src/sql/widgets/ *
+recursive-include src/sql/widgets/* *
