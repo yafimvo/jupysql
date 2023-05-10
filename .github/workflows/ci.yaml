@@ -17,8 +17,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
-    exclude:
-      - node_version: '12.x'
+
     steps:
       - uses: actions/checkout@v2
 
