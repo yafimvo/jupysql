@@ -34,6 +34,11 @@ class TableWidget:
 
         is_table_exists(table)
 
+        print("BASE DIR IS : ", BASE_DIR)
+        print("FILE LOCATION IS : ", f"{BASE_DIR}/css/tableWidget.css")
+        print("LIST FILES AND DIRS base dir: ", os.listdir(f"{BASE_DIR}"))
+        print("LIST FILES AND DIRS css : ", os.listdir(f"{BASE_DIR}/css/"))
+
         # load css
         html_style = utils.load_css(f"{BASE_DIR}/css/tableWidget.css")
         self.add_to_html(html_style)
