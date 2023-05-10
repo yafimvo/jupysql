@@ -1,6 +1,6 @@
 from sql.widgets import TableWidget
 import pytest
-from sql.widgets import utils
+# from sql.widgets import utils
 import js2py
 
 
