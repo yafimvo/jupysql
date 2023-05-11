@@ -70,4 +70,5 @@ This should generate the following table:
 ![table widget](./table_widget.jpg)
 
 
-See a live example on [Binder](table_explorer_demo.ipynb).
+See a live example on [Binder](https://binder.ploomber.io/v2/gh/yafimvo/jupysql/table_explorer?urlpath=lab/tree/doc/user-guide/table_explorer_demo.ipynb).
+<!-- See a live example on (Binder)[https://binder.ploomber.io/v2/gh/ploomber/jupysql/master?urlpath=lab/tree/doc/user-guide/table-explorer.md]. -->
