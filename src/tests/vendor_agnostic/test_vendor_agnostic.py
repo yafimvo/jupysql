@@ -1,5 +1,5 @@
 import pytest
-from tests.vendor_agnostic.results_collector import ResultsCollector
+from vendor_agnostic.results_collector import ResultsCollector
 
 # IP = ["postgresql", "mssql", "sqlite", "duckdb", "mariadb", "snowflake"]
 IP = ["postgresql"]
