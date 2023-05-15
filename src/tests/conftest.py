@@ -64,7 +64,7 @@ def ip_empty():
 
 
 def pytest_addoption(parser):
-    parser.addoption("--ip", action="store", help="the database to check")
+    parser.addoption("--ip", action="store", default=None, help="the database to check")
     parser.addoption("--live", action="store_true")
 
 
