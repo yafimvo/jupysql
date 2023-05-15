@@ -1,3 +1,4 @@
+from tests.vendor_agnostic.fixtures import *  # noqa
 import os
 import urllib.request
 from pathlib import Path
@@ -56,6 +57,59 @@ def ip_empty():
     ip_session.register_magics(SqlPlotMagic)
     ip_session.register_magics(SqlCmdMagic)
     yield ip_session
+
+
+def pytest_addoption(parser):
+    parser.addoption("--ip", action="store", help="the database to check")
+    parser.addoption("--live", action="store_true")
+
+
+def pytest_configure(config):
+    ip = config.getoption("ip")
+
+    class PluginIPFactory:
+        if ip == "postgresql":
+
+            @pytest.fixture
+            def custom_ip(self, ip_with_postgreSQL):  # noqa F811
+                yield ip_with_postgreSQL
+
+        if ip == "mssql":
+
+            @pytest.fixture
+            def custom_ip(self, ip_with_MSSQL):  # noqa F811
+                yield ip_with_MSSQL
+
+        if ip == "mariadb":
+
+            @pytest.fixture
+            def custom_ip(self, ip_with_mariaDB):  # noqa F811
+                yield ip_with_mariaDB
+
+        if ip == "snowflake":
+
+            @pytest.fixture
+            def custom_ip(self, ip_with_Snowflake):  # noqa F811
+                yield ip_with_Snowflake
+
+        elif ip == "duckdb":
+
+            @pytest.fixture
+            def custom_ip(self, ip_empty):  # noqa F811
+                ip_empty.run_cell("%sql duckdb://")
+                yield ip_empty
+
+        elif ip == "sqlite":
+
+            @pytest.fixture
+            def custom_ip(self, ip_empty):  # noqa F811
+                ip_empty.run_cell("%sql sqlite://")
+                yield ip_empty
+
+        else:
+            pass
+
+    config.pluginmanager.register(PluginIPFactory())
 
 
 @pytest.fixture
