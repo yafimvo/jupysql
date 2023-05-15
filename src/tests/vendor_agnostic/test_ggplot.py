@@ -94,7 +94,7 @@ sex IS NOT NULL
 
 
 @_cleanup_cm()
-@image_comparison(baseline_images=["boxplot"], extensions=["png"], remove_text=True)
+@image_comparison(baseline_images=["histogram_custom_fill_and_color"], extensions=["png"], remove_text=True)
 def test_ggplot_geom_boxplot(yellow_trip_data):
     (ggplot(yellow_trip_data, aes(x="trip_distance")) + geom_boxplot())
 
