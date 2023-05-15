@@ -95,7 +95,7 @@ sex IS NOT NULL
 
 @_cleanup_cm()
 @image_comparison(
-    baseline_images=["histogram_custom_fill_and_color"],
+    baseline_images=["boxplot"],
     extensions=["png"],
     remove_text=True,
 )
