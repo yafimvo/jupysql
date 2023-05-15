@@ -22,3 +22,8 @@ def run(files, capsys):
 
             with capsys.disabled():
                 pytest.main(plugins=[collector], args=args_)
+
+        if len(collector.failed):
+            assert False
+        else:
+            assert True
