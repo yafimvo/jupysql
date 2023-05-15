@@ -1,4 +1,4 @@
-from tests.vendor_agnostic.fixtures import *  # noqa
+from vendor_agnostic.fixtures import *  # noqa
 
 import os
 import urllib.request
