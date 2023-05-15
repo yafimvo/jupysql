@@ -39,5 +39,5 @@ jobs:
       - name: Integration Test
         run:
           # Run the integration test by pytest marker
-          python -c "import sqlalchemy; print('Sqlalchemy version ', sqlalchemy.__version__)"
+          # python -c "import sqlalchemy; print('Sqlalchemy version ', sqlalchemy.__version__)"
           pytest src/tests/vendor_agnostic/test_vendor_agnostic.py --verbose
