@@ -1,4 +1,8 @@
-from tests.vendor_agnostic.fixtures import *  # noqa
+try:
+    from tests.vendor_agnostic.fixtures import *  # noqa
+except Exception:
+    pass
+
 import os
 import urllib.request
 from pathlib import Path
