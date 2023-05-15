@@ -9,7 +9,7 @@ on:
 
 
 jobs:
-  database-integration-test:
+  vendor-agnostic-test:
     strategy:
       matrix:
         python-version: ['3.11']
@@ -39,5 +39,4 @@ jobs:
       - name: Integration Test
         run:
           # Run the integration test by pytest marker
-          python -c "import sqlalchemy; print('Sqlalchemy version ', sqlalchemy.__version__)"
           pytest src/tests/vendor_agnostic/test_vendor_agnostic --verbose
