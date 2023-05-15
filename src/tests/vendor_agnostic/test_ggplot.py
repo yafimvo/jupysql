@@ -177,7 +177,7 @@ def test_ggplot_geom_histogram_fill_and_color(short_trips_data):
 )
 @_cleanup_cm()
 @image_comparison(
-    baseline_images=["histogram_stacked_default"],
+    baseline_images=["histogram_stacked_custom_cmap"],
     extensions=["png"],
     remove_text=True,
 )
@@ -187,7 +187,7 @@ def test_example_histogram_stacked_default(diamonds_data, x):
 
 @_cleanup_cm()
 @image_comparison(
-    baseline_images=["histogram_stacked_custom_cmap"],
+    baseline_images=["histogram_stacked_default"],
     extensions=["png"],
     remove_text=True,
 )
