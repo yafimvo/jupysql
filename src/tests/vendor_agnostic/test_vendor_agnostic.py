@@ -23,4 +23,4 @@ def run(files, capsys):
             with capsys.disabled():
                 pytest.main(plugins=[collector], args=args_)
 
-        assert collector.failed != 0
+        assert collector.failed == 0
