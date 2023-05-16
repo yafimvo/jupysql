@@ -2,9 +2,9 @@ import pytest
 from vendor_agnostic.results_collector import ResultsCollector
 from datetime import timedelta
 
-# IP = ["postgresql", "duckdb"]
-IP = ["postgresql", "mssql", "sqlite", "duckdb", "mariadb", "questdb"]
-# IP = ["postgresql", "mssql", "sqlite", "duckdb", "mariadb", "snowflake", "questdb"]
+
+# IP = ["postgresql", "mssql", "sqlite", "duckdb", "mariadb", "questdb"]
+IP = ["postgresql", "mssql", "sqlite", "duckdb", "mariadb", "snowflake", "questdb"]
 
 BASE_DIR = "./src/tests/vendor_agnostic"
 
@@ -19,13 +19,7 @@ def test_plot(capsys):
     run(files, capsys)
 
 
-def test_integration(capsys):
-    files = ["test_integration.py"]
-    run(files, capsys)
-
-
 def run(files, capsys):
-
     collector = ResultsCollector()
     for file in files:
         test_file = f"{BASE_DIR}/{file}"
@@ -43,7 +37,8 @@ def run(files, capsys):
                 time_delta_ = timedelta(seconds=time_sconds)
 
                 print(
-                    f"\n\n============ {file} results for {ip} in {time_sconds}s ({time_delta_}) ============")
+                    f"\n\n============ {file} results for {ip} in {time_sconds}s ({time_delta_}) ============"
+                )
                 print("passed : ", collector.passed)
                 print("failed : ", collector.failed)
                 print("xfailed : ", collector.xfailed)

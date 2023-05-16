@@ -123,7 +123,9 @@ def test_summary_stats_missing_file(chinook_db, custom_ip):
     ],
 )
 # Test internal plot function e.g.
-def test_internal_histogram_exception(tmp_empty, custom_ip, cell, error_type, error_message):
+def test_internal_histogram_exception(
+    tmp_empty, custom_ip, cell, error_type, error_message
+):
     Path("data.csv").write_text("name,age\nDan,33\nBob,19\nSheri,")
     custom_ip.run_cell("%sql duckdb://")
     custom_ip.run_cell(
