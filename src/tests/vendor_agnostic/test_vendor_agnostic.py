@@ -30,9 +30,9 @@ def run(files, capsys):
             else:
                 args_ = ["-s", "--ip", ip, test_file]
 
-            with capsys.disabled():
-                pytest.main(plugins=[collector], args=args_)
+            pytest.main(plugins=[collector], args=args_)
 
+            with capsys.disabled():
                 time_sconds = collector.total_duration.__round__(2)
                 time_delta_ = timedelta(seconds=time_sconds)
 
