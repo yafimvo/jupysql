@@ -26,7 +26,7 @@ pip install jupysql --upgrade
 ~~~
 ```
 
-In this guide, we demonstrate how to use JupySQL's table explorer to visualize your SQL tables in HTML format and interact with them efficiently.
+In this guide, we demonstrate how to use JupySQL's table explorer to visualize SQL tables in HTML format and interact with them efficiently. By running SQL queries in the background instead of loading the data into memory, we minimize the resource consumption and processing time required for handling large datasets, making the interaction with the SQL tables faster and more streamlined.
 
 ```{note}
 If you are using JupyterLab or Binder, please ensure that you have installed the latest version of the JupySQL plugin by running the following command: `pip install jupysql-plugin --upgrade`.

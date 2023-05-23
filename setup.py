@@ -47,7 +47,7 @@ DEV = [
     "black",
     # for %%sql --interact
     "ipywidgets",
-    # for %sqlcmd explore --table
+    # for running tests for %sqlcmd explore --table
     "js2py",
 ]
 

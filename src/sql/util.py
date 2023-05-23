@@ -256,7 +256,7 @@ def support_only_sql_alchemy_connection(command):
 
 def fetch_sql_with_pagination(
     table, offset, n_rows, sort_column=None, sort_order=None
-) -> tuple():
+) -> tuple:
     """
     Returns next n_rows and columns from table starting at the offset
 
