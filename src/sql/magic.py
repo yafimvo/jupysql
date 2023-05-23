@@ -29,8 +29,9 @@ from sql.magic_cmd import SqlCmdMagic
 from sql._patch import patch_ipython_usage_error
 from ploomber_core.dependencies import check_installed
 
+from sql.error_message import detail
 from traitlets.config.configurable import Configurable
-from traitlets import Bool, Int, Unicode, Dict, observe
+from traitlets import Bool, Int, TraitError, Unicode, Dict, observe, validate
 
 try:
     from pandas.core.frame import DataFrame, Series
@@ -95,7 +96,7 @@ class SqlMagic(Magics, Configurable):
         help="Don't display the full traceback on SQL Programming Error",
     )
     displaylimit = Int(
-        None,
+        sql.run.DEFAULT_DISPLAYLIMIT_VALUE,
         config=True,
         allow_none=True,
         help=(
@@ -144,6 +145,26 @@ class SqlMagic(Magics, Configurable):
 
         # Add ourself to the list of module configurable via %config
         self.shell.configurables.append(self)
+
+    # To verify displaylimit is valid positive integer
+    # If:
+    #   None -> We treat it as 0 (no limit)
+    #   Positive Integer -> Pass
+    #   Negative Integer -> raise Error
+    @validate("displaylimit")
+    def _valid_displaylimit(self, proposal):
+        if proposal["value"] is None:
+            print("displaylimit: Value None will be treated as 0 (no limit)")
+            return 0
+        try:
+            value = int(proposal["value"])
+            if value < 0:
+                raise TraitError(
+                    "{}: displaylimit cannot be a negative integer".format(value)
+                )
+            return value
+        except ValueError:
+            raise TraitError("{}: displaylimit is not an integer".format(value))
 
     @observe("autopandas", "autopolars")
     def _mutex_autopandas_autopolars(self, change):
@@ -262,6 +283,7 @@ class SqlMagic(Magics, Configurable):
         )
 
     @telemetry.log_call("execute", payload=True)
+    @modify_exceptions
     def _execute(self, payload, line, cell, local_ns, is_interactive_mode=False):
         def interactive_execute_wrapper(**kwargs):
             for key, value in kwargs.items():
@@ -410,11 +432,18 @@ class SqlMagic(Magics, Configurable):
         # JA: added DatabaseError for MySQL
         except (ProgrammingError, OperationalError, DatabaseError) as e:
             # Sqlite apparently return all errors as OperationalError :/
-
+            detailed_msg = detail(e, command.sql)
             if self.short_errors:
-                print(e)
+                if detailed_msg is not None:
+                    err = exceptions.UsageError(detailed_msg)
+                    raise err
+                else:
+                    print(e)
             else:
-                raise
+                if detailed_msg is not None:
+                    print(detailed_msg)
+                e.modify_exception = True
+                raise e
 
     legal_sql_identifier = re.compile(r"^[A-Za-z0-9#_$]+")
 
