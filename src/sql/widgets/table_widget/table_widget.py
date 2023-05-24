@@ -7,12 +7,14 @@ from sql.util import (
     fetch_sql_with_pagination,
     parse_sql_results_to_json,
     is_table_exists,
+    is_jupyterlab_session,
 )
 
 from sql.widgets import utils
 from sql.telemetry import telemetry
 
 import os
+from ploomber_core.dependencies import check_installed
 
 # Widget base dir
 BASE_DIR = os.path.dirname(__file__)
@@ -96,9 +98,53 @@ class TableWidget:
 
     def load_tests(self):
         """
-        Set which JS functionality to test.
+        Define which JS functions we should
+        include in this widget's test unit.
 
-        We extract the relevant functions from the html code.
+        Example:
+
+        Given following the html:
+
+        <script>
+
+            function drawList() {
+                return `<ul><li>item1</li><li>item2</li></ul>`
+            }
+
+            function drawTable() {
+                return `
+                        <table>
+                            <tr>
+                                <td>1</td>
+                                <td>2</td>
+                            </tr>
+                        </table>
+                    `
+            }
+
+        </script>
+
+        We can include `drawList` in the test unit by extracting it
+        from the html and add it to this widget's test property.
+
+        self.tests["drawList"] = utils.extract_function_by_name(
+            html, "drawList"
+        )
+
+
+        Testing with pytest:
+
+        import js2py
+
+        def test_draw_list(expected):
+            expected = "<ul><li>item1</li><li>item2</li></ul>"
+
+            table_widget = TableWidget("empty_table")
+
+            result = js2py.eval_js(table_widget.tests["drawList"])
+
+            assert result == expected
+
         """
         self.tests = dict()
         self.tests["createTableRows"] = utils.extract_function_by_name(
@@ -109,6 +155,9 @@ class TableWidget:
         """
         Register communication between the frontend and the kernel.
         """
+
+        if is_jupyterlab_session():
+            check_installed(["jupysql-plugin"], "jupysql-plugin")
 
         def comm_handler(comm, open_msg):
             """
