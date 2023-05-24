@@ -6,7 +6,7 @@ import time
 from sql.util import (
     fetch_sql_with_pagination,
     parse_sql_results_to_json,
-    is_table_exists
+    is_table_exists,
 )
 
 from sql.widgets import utils
@@ -156,7 +156,9 @@ class TableWidget:
         """
 
         if utils.is_jupyterlab_session():
-            check_installed(["jupysql-plugin"], "jupysql-plugin")
+            check_installed(
+                ["jupysql_plugin"], "jupysql-plugin", pip_names=["jupysql-plugin"]
+            )
 
         def comm_handler(comm, open_msg):
             """
