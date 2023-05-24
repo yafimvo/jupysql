@@ -237,7 +237,7 @@ def flatten(src, ltypes=(list, tuple)):
                 i -= 1
                 break
             else:
-                process_list[i: i + 1] = process_list[i]
+                process_list[i : i + 1] = process_list[i]
         i += 1
 
     # If input src data type is tuple, return tuple
@@ -305,33 +305,3 @@ def parse_sql_results_to_json(rows, columns) -> str:
     )
 
     return rows_json
-
-
-def is_jupyterlab_session() -> bool:
-    """Check whether we are in a Jupyter-Lab session.
-    Notes
-    -----
-    This is a heuristic based process inspection based on the current Jupyter lab
-    (major 3) version. So it could fail in the future.
-    It will also report false positive in case a classic notebook frontend is started
-    via Jupyter lab.
-
-    reference: https://discourse.jupyter.org/t/find-out-if-my-code-runs-inside-a-notebook-or-jupyter-lab/6935
-    """
-    import psutil
-
-    # inspect parent process for any signs of being a jupyter lab server
-
-    parent = psutil.Process().parent()
-    if parent.name() == "jupyter-lab":
-        return True
-    keys = (
-        "JUPYTERHUB_API_KEY",
-        "JPY_API_TOKEN",
-        "JUPYTERHUB_API_TOKEN",
-    )
-    env = parent.environ()
-    if any(k in env for k in keys):
-        return True
-
-    return False

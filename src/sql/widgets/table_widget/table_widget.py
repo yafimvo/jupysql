@@ -6,8 +6,7 @@ import time
 from sql.util import (
     fetch_sql_with_pagination,
     parse_sql_results_to_json,
-    is_table_exists,
-    is_jupyterlab_session,
+    is_table_exists
 )
 
 from sql.widgets import utils
@@ -156,7 +155,7 @@ class TableWidget:
         Register communication between the frontend and the kernel.
         """
 
-        if is_jupyterlab_session():
+        if utils.is_jupyterlab_session():
             check_installed(["jupysql-plugin"], "jupysql-plugin")
 
         def comm_handler(comm, open_msg):
