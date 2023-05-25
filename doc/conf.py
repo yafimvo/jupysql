@@ -13,13 +13,9 @@ repository_url, repository_branch = get_repo_and_branch_for_readthedocs(
 author = "Ploomber"
 comments_config = {"hypothesis": False, "utterances": False}
 copyright = "2023"
-exclude_patterns = []
+exclude_patterns = ["**.ipynb_checkpoints", ".DS_Store", "Thumbs.db", "_build"]
 nb_execution_allow_errors = False
 nb_execution_excludepatterns = [
-    "**.ipynb_checkpoints",
-    ".DS_Store",
-    "Thumbs.db",
-    "_build",
     "integrations/*-connect.ipynb",
     "integrations/mssql.ipynb",
     "integrations/mysql.ipynb",
@@ -27,7 +23,6 @@ nb_execution_excludepatterns = [
     "integrations/clickhouse.ipynb",
     "integrations/mindsdb.ipynb",
     "integrations/questdb.ipynb",
-    "user-guide/table_explorer_demo.ipynb",
 ]
 nb_execution_in_temp = True
 nb_execution_show_tb = True

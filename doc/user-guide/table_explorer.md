@@ -20,7 +20,7 @@ myst:
 # Table Explorer
 
 
-```{versionadded} 0.7.5
+```{versionadded} 0.7.6
 ~~~
 pip install jupysql --upgrade
 ~~~
@@ -61,13 +61,11 @@ For this demonstration, we'll be using the `DuckDB` connection.
 
 To create the table, use the `explore` attribute and specify the name of the table that was just downloaded.
 
-```
+```{code-cell} ipython3
+:tags: []
+
 %sqlcmd explore --table "yellow_tripdata_2021.parquet"
 ```
 
-This should generate the following table:
 
-![table widget](./table_widget.jpg)
-
-
-See a live example on [Binder](https://binder.ploomber.io/v2/gh/ploomber/jupysql/master?urlpath=lab/tree/doc/user-guide/table-explorer.md).
+See interactive and live example on [Binder](https://binder.ploomber.io/v2/gh/ploomber/jupysql/master?urlpath=lab/tree/doc/user-guide/table-explorer.md).

@@ -19,7 +19,6 @@ parts:
     - file: user-guide/ggplot
     - file: user-guide/table_explorer
     - file: user-guide/FAQ
-    - file: user-guide/table_explorer_demo
 
   - caption: Integrations
     chapters:
