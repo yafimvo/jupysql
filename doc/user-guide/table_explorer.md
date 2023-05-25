@@ -68,4 +68,4 @@ To create the table, use the `explore` attribute and specify the name of the tab
 ```
 
 
-See interactive and live example on [Binder](https://binder.ploomber.io/v2/gh/ploomber/jupysql/master?urlpath=lab/tree/doc/user-guide/table-explorer.md).
+See interactive and live example on [Binder](https://binder.ploomber.io/v2/gh/ploomber/jupysql/master?urlpath=lab/tree/doc/user-guide/table_explorer.md).
