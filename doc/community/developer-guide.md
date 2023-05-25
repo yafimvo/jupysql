@@ -88,9 +88,11 @@ In our codebase, we manage connections to databases with a `Connection` object, 
 
 ```{code-cell} ipython3
 from sql.connection import Connection
+
 conn = Connection.current.session
 conn
 ```
+
  
 Functions that expect a `conn` (sometimes named `con`) input variable should only use SQLAlchemy connections.
 
