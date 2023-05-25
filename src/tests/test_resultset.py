@@ -7,7 +7,6 @@ import pytest
 import pandas as pd
 import polars as pl
 import sqlalchemy
-import duckdb
 
 from sql.run import ResultSet
 from sql import run as run_module
