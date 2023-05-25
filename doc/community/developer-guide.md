@@ -71,6 +71,47 @@ Currently, these common errors are handled by providing more meaningful error me
 
 +++
 
+## Managing Connections
+
+In our codebase, we manage connections to databases with a `Connection` object, this is required for the `%%sql magic` to work. Internally, this connection object has a sqlalchemy connection.
+
+### Accessing connection object
+
+`Connection` should be exclusively used to manage database connections on the user's behalf and to obtain the current SQLAlchemy connection. We can access the current SQLAlchemy connection using `current.session`.
+
+```{code-cell} ipython3
+:tags: [remove-output]
+
+%load_ext sql
+%sql sqlite://
+```
+
+```{code-cell} ipython3
+from sql.connection import Connection
+conn = Connection.current.session
+conn
+```
+ 
+Functions that expect a `conn` (sometimes named `con`) input variable should only use SQLAlchemy connections.
+
+```python
+def histogram(payload, table, column, bins, with_=None, conn=None):
+    pass
+```
+
+### Tests
+
+When creating data for tests, we should use `sqlalchemy.create_engine` and avoid using native driver functions (e.g. `sqlite3.connect` or `duckdb.connect`) to ensure consistency.
+
+```{code-cell} ipython3
+from sqlalchemy import create_engine
+from sql.connection import Connection
+
+conn = Connection(engine=create_engine("sqlite://"))
+
+conn.execute("CREATE TABLE some_table (name, age)")
+```
+
 ## Unit testing
 
 ### Running tests
@@ -254,6 +295,7 @@ pytest src/tests/integration/test_generic_db_operations.py::test_profile_query
 We run integration tests against cloud databases like Snowflake, which requires using pre-registered accounts to evaluate their behavior. To initiate these tests, please create a branch in our [ploomber/jupyter repository](https://github.com/ploomber/jupysql).
 
 Please note that if you submit a pull request from a forked repository, the integration testing phase will be skipped because the pre-registered accounts won't be accessible.
+
 ## General SQL Clause for Multiple Database Dialects
 
 ### Context
