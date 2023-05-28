@@ -1,8 +1,9 @@
 # CHANGELOG
 
 ## 0.7.6dev
-
 * [Doc] documenting how to manage connections with `Connection` object (#282)
+* [Feature] Support for printing capture variables using `=<<` syntax (by [@jorisroovers](https://github.com/jorisroovers))
+* [Feature] Adds `--persist-replace` argument to replace existing tables when persisting data frames (#440)
 
 ## 0.7.5 (2023-05-24)
 
