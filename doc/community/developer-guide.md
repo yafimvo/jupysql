@@ -75,7 +75,7 @@ Currently, these common errors are handled by providing more meaningful error me
 
 In our codebase, we manage connections to databases with a `Connection` object, this is required for the `%%sql magic` to work. Internally, this connection object has a sqlalchemy connection.
 
-### Accessing connection object
+### Working with connections
 
 `Connection` should be exclusively used to manage database connections on the user's behalf and to obtain the current SQLAlchemy connection. We can access the current SQLAlchemy connection using `current.session`.
 
@@ -92,7 +92,6 @@ from sql.connection import Connection
 conn = Connection.current.session
 conn
 ```
-
  
 Functions that expect a `conn` (sometimes named `con`) input variable should only use SQLAlchemy connections.
 
@@ -112,6 +111,27 @@ from sql.connection import Connection
 conn = Connection(engine=create_engine("sqlite://"))
 
 conn.execute("CREATE TABLE some_table (name, age)")
+```
+
+### Non SQLAlchemy supported engines
+
+When working with engines that are not supported by SQLAlchemy, e.g. `QuestDB`, we won't be able to use `sqlalchemy.create_engine`.
+Instead, we should initiate an engine using the native method and use the `CustomConnection` object.
+
+```python
+import psycopg as pg
+from sql.connection import CustomConnection
+
+engine = pg.connect("dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'")
+conn = CustomConnection(engine)
+
+plot.histogram("my_table", "column_name", bins=50, conn=conn)
+```
+
+For a full example on how to use JupySQL with a non SQLAlchemy supported engine please see [QuestDB](./../integrations/questdb).
+
+```{note}
+Please be advised that there may be some features/functionalities that won't be fully compatible with JupySQL when using `CustomConnection`.
 ```
 
 ## Unit testing
