@@ -19,9 +19,42 @@ myst:
 
 # Developer guide
 
-Before continuing, ensure you have a working [development environment.](https://ploomber-contributing.readthedocs.io/en/latest/contributing/setup.html)
+Before continuing, ensure you have a [working development environment locally](https://ploomber-contributing.readthedocs.io/en/latest/contributing/setup.html) or on [github codespaces](https://github.com/features/codespaces).
+
+## Github Codespace
+
+Github Codespaces allow you to spin up a fully configured dev environment in the cloud in a few minutes. Github provides 60 hours a month of free usage (for a 2-core codespace). While codespaces will automatically pauze after 30 min of idle time, it's a good idea to shut your codespace down entirely via [the management dashboard](https://github.com/codespaces) and to [setup spending limits](https://github.com/settings/billing/spending_limit) to avoid unexpected charges.
+
+![JupySQL github codespace](../static/github-codespace.png)
+You can launch a new github codespace from the green "Code" button on [the JupySQL github repository](https://github.com/ploomber/jupysql). 
+
+Note that setup will take a few minutes to finish after the codespace becomes available (wait for the **postCreateCommand** step to finish).
+![JupySQL github codespace](../static/github-codespace-setup.png)
+
+After the codespace has finished setting up, you can run `conda activate jupysql` to activate the JupySQL Conda environment. 
 
 +++
+
+## Displaying messages
+
+```{important}
+Use the `sql.display` module instead of `print` for showing feedback to the user.
+```
+
+You can use `message` (contextual information) and `message_success` (successful operations) to show feedback to the user. Here's an example:
+
+```{code-cell} ipython3
+from sql.display import message, message_success
+```
+
+```{code-cell} ipython3
+message("Some information")
+```
+
+```{code-cell} ipython3
+message_success("Some operation finished successfully!")
+```
+
 
 ## Throwing errors
 
@@ -70,6 +103,69 @@ Currently, these common errors are handled by providing more meaningful error me
 * Invalid connection strings when connecting to DuckDB.
 
 +++
+
+## Managing Connections
+
+In our codebase, we manage connections to databases with a `Connection` object, this is required for the `%%sql magic` to work. Internally, this connection object has a sqlalchemy connection.
+
+### Working with connections
+
+`Connection` should be exclusively used to manage database connections on the user's behalf and to obtain the current SQLAlchemy connection. We can access the current SQLAlchemy connection using `current.session`.
+
+```{code-cell} ipython3
+:tags: [remove-output]
+
+%load_ext sql
+%sql sqlite://
+```
+
+```{code-cell} ipython3
+from sql.connection import Connection
+
+conn = Connection.current.session
+conn
+```
+ 
+Functions that expect a `conn` (sometimes named `con`) input variable should only use SQLAlchemy connections.
+
+```python
+def histogram(payload, table, column, bins, with_=None, conn=None):
+    pass
+```
+
+### Tests
+
+When creating data for tests, we should use `sqlalchemy.create_engine` and avoid using native driver functions (e.g. `sqlite3.connect` or `duckdb.connect`) to ensure consistency.
+
+```{code-cell} ipython3
+from sqlalchemy import create_engine
+from sql.connection import Connection
+
+conn = Connection(engine=create_engine("sqlite://"))
+
+conn.execute("CREATE TABLE some_table (name, age)")
+```
+
+### Non SQLAlchemy supported engines
+
+When working with engines that are not supported by SQLAlchemy, e.g. `QuestDB`, we won't be able to use `sqlalchemy.create_engine`.
+Instead, we should initiate an engine using the native method and use the `CustomConnection` object.
+
+```python
+import psycopg as pg
+from sql.connection import CustomConnection
+
+engine = pg.connect("dbname='qdb' user='admin' host='127.0.0.1' port='8812' password='quest'")
+conn = CustomConnection(engine)
+
+plot.histogram("my_table", "column_name", bins=50, conn=conn)
+```
+
+For a full example on how to use JupySQL with a non SQLAlchemy supported engine please see [QuestDB](./../integrations/questdb).
+
+```{note}
+Please be advised that there may be some features/functionalities that won't be fully compatible with JupySQL when using `CustomConnection`.
+```
 
 ## Unit testing
 
@@ -224,7 +320,7 @@ pkgmt setup
 # activate environment
 conda activate jupysql
 
-# install depdencies
+# install dependencies
 pip install -e '.[integration]'
 ```
 
@@ -237,6 +333,14 @@ the required Docker images):
 
 ```sh
 pytest src/tests/integration
+```
+
+```{important}
+If you're using **Apple M chips**, the docker container on Oracle Database might fail since it's only supporting to x86_64 CPU.
+
+You will need to install [colima](https://github.com/abiosoft/colima) then run `colima start --cpu 4 --memory 4 --disk 30 --arch x86_64` before running the integration testing. [See more](https://hub.docker.com/r/gvenzl/oracle-xe)
+
+Send us a [message on Slack](https://ploomber.io/community) if any issue happens.
 ```
 
 ```{important}
@@ -254,6 +358,7 @@ pytest src/tests/integration/test_generic_db_operations.py::test_profile_query
 We run integration tests against cloud databases like Snowflake, which requires using pre-registered accounts to evaluate their behavior. To initiate these tests, please create a branch in our [ploomber/jupyter repository](https://github.com/ploomber/jupysql).
 
 Please note that if you submit a pull request from a forked repository, the integration testing phase will be skipped because the pre-registered accounts won't be accessible.
+
 ## General SQL Clause for Multiple Database Dialects
 
 ### Context
@@ -298,9 +403,9 @@ print("Transpiled result: ")
 conn._transpile_query(general_sql)
 ```
 
-### Approach 2 - Provide SQL Clause based on specfic database 
+### Approach 2 - Provide SQL Clause based on specific database 
 
-Sometimes the SQL Clause might be complex, we can also write the SQL Clause based on one specfic database and transpile it.
+Sometimes the SQL Clause might be complex, we can also write the SQL Clause based on one specific database and transpile it.
 
 For example, the `TO_TIMESTAMP` keyword is only defined in duckdb, but we want to also apply this SQL clause to other database.
 

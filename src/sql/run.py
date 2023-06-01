@@ -11,7 +11,7 @@ import prettytable
 import sqlalchemy
 import sqlparse
 from sql.connection import Connection
-from sql import exceptions
+from sql import exceptions, display
 from .column_guesser import ColumnGuesserMixin
 
 try:
@@ -93,7 +93,7 @@ def _nonbreaking_spaces(match_obj):
     Make spaces visible in HTML by replacing all `` `` with ``&nbsp;``
 
     Call with a ``re`` match object.  Retain group 1, replace group 2
-    with nonbreaking speaces.
+    with nonbreaking spaces.
     """
     spaces = "&nbsp;" * len(match_obj.group(2))
     return "%s%s" % (match_obj.group(1), spaces)
@@ -179,7 +179,8 @@ class ResultSet(ColumnGuesserMixin):
             yield result
 
     def __str__(self, *arg, **kwarg):
-        self.pretty.add_rows(self)
+        if self.pretty:
+            self.pretty.add_rows(self)
         return str(self.pretty or "")
 
     def __repr__(self) -> str:
@@ -254,7 +255,7 @@ class ResultSet(ColumnGuesserMixin):
                       from each other in pie labels
         title: Plot title, defaults to name of value column
 
-        Any additional keyword arguments will be passsed
+        Any additional keyword arguments will be passed
         through to ``matplotlib.pylab.pie``.
         """
         self.guess_pie_columns(xlabel_sep=key_word_sep)
@@ -282,7 +283,7 @@ class ResultSet(ColumnGuesserMixin):
         ----------
         title: Plot title, defaults to names of Y value columns
 
-        Any additional keyword arguments will be passsed
+        Any additional keyword arguments will be passed
         through to ``matplotlib.pylab.plot``.
         """
         import matplotlib.pylab as plt
@@ -323,7 +324,7 @@ class ResultSet(ColumnGuesserMixin):
         key_word_sep: string used to separate column values
                       from each other in labels
 
-        Any additional keyword arguments will be passsed
+        Any additional keyword arguments will be passed
         through to ``matplotlib.pylab.bar``.
         """
         import matplotlib.pylab as plt
@@ -364,12 +365,9 @@ class ResultSet(ColumnGuesserMixin):
             return outfile.getvalue()
 
 
-def interpret_rowcount(rowcount):
-    if rowcount < 0:
-        result = "Done."
-    else:
-        result = "%d rows affected." % rowcount
-    return result
+def display_affected_rowcount(rowcount):
+    if rowcount > 0:
+        display.message_success(f"{rowcount} rows affected.")
 
 
 class FakeResultProxy(object):
@@ -550,7 +548,7 @@ def run(conn, sql, config):
 
                 if result and config.feedback:
                     if hasattr(result, "rowcount"):
-                        print(interpret_rowcount(result.rowcount))
+                        display_affected_rowcount(result.rowcount)
 
     # bypass ResultSet and use duckdb's native method to return a pandas data frame
     if duckdb_autopandas:

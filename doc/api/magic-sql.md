@@ -111,7 +111,7 @@ To make all subsequent queries to use certain connection, pass the connection na
 You can inspect which is the current active connection:
 
 ```{code-cell} ipython3
-%sql --list
+%sql --connections
 ```
 
 For more details on managing connections, see [Switch connections](../howto.md#switch-connections).
@@ -121,7 +121,7 @@ For more details on managing connections, see [Switch connections](../howto.md#s
 ## List connections
 
 ```{code-cell} ipython3
-%sql --list
+%sql --connections
 ```
 
 ## Close connection
@@ -205,7 +205,7 @@ FROM my_data
 LIMIT 3
 """
 
-%sql $QUERY
+%sql {{QUERY}}
 ```
 
 ## Templated SQL queries
@@ -228,11 +228,11 @@ limit_two = template.substitute(limit=2)
 **Important:** Ensure you sanitize the input parameters; as malicious parameters will be able to run arbitrary SQL queries.
 
 ```{code-cell} ipython3
-%sql $limit_one
+%sql {{limit_one}}
 ```
 
 ```{code-cell} ipython3
-%sql $limit_two
+%sql {{limit_two}}
 ```
 
 ## Compose large queries

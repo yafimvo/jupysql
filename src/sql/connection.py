@@ -10,7 +10,7 @@ import sqlglot
 
 from sql.store import store
 from sql.telemetry import telemetry
-from sql import exceptions
+from sql import exceptions, display
 from sql.error_message import detail
 from ploomber_core.exceptions import modify_exceptions
 
@@ -50,6 +50,19 @@ MISSING_PACKAGE_LIST_EXCEPT_MATCHERS = {
 }
 
 DIALECT_NAME_SQLALCHEMY_TO_SQLGLOT_MAPPING = {"postgresql": "postgres", "mssql": "tsql"}
+
+# All the DBs and their respective documentation links
+DB_DOCS_LINKS = {
+    "duckdb": "https://jupysql.ploomber.io/en/latest/integrations/duckdb.html",
+    "mysql": "https://jupysql.ploomber.io/en/latest/integrations/mysql.html",
+    "mssql": "https://jupysql.ploomber.io/en/latest/integrations/mssql.html",
+    "mariadb": "https://jupysql.ploomber.io/en/latest/integrations/mariadb.html",
+    "clickhouse": "https://jupysql.ploomber.io/en/latest/integrations/clickhouse.html",
+    "postgresql": (
+        "https://jupysql.ploomber.io/en/latest/integrations/postgres-connect.html"
+    ),
+    "questdb": "https://jupysql.ploomber.io/en/latest/integrations/questdb.html",
+}
 
 
 def extract_module_name_from_ModuleNotFoundError(e):
@@ -110,6 +123,29 @@ def rough_dict_get(dct, sought, default=None):
     return default
 
 
+def is_pep249_compliant(conn):
+    """
+    Checks if given connection object complies with PEP 249
+    """
+    pep249_methods = [
+        "close",
+        "commit",
+        # "rollback",
+        # "cursor",
+        # PEP 249 doesn't require the connection object to have
+        # a cursor method strictly
+        # ref: https://peps.python.org/pep-0249/#id52
+    ]
+
+    for method_name in pep249_methods:
+        # Checking whether the connection object has the method
+        # and if it is callable
+        if not hasattr(conn, method_name) or not callable(getattr(conn, method_name)):
+            return False
+
+    return True
+
+
 class Connection:
     """Manages connections to databases
 
@@ -117,6 +153,30 @@ class Connection:
     ----------
     engine: sqlalchemy.engine.Engine
         The SQLAlchemy engine to use
+
+    Attributes
+    ----------
+    alias : str or None
+        The alias passed in the constructor
+
+    engine : sqlalchemy.engine.Engine
+        The SQLAlchemy engine passed to the constructor
+
+    name : str
+        A name to identify the connection: {user}@{database_name}
+
+    metadata : Metadata or None
+        An SQLAlchemy Metadata object (if using SQLAlchemy 2, this is None),
+        used to retrieve connection information
+
+    url : str
+        An obfuscated connection string (password hidden)
+
+    dialect : sqlalchemy dialect
+        A SQLAlchemy dialect object
+
+    session : sqlalchemy session
+        A SQLAlchemy session object
     """
 
     # the active connection
@@ -126,26 +186,26 @@ class Connection:
     connections = {}
 
     def __init__(self, engine, alias=None):
-        self.url = engine.url
-        self.name = self.assign_name(engine)
-        self.dialect = self.url.get_dialect()
+        self.alias = alias
         self.engine = engine
+        self.name = self.assign_name(engine)
 
         if IS_SQLALCHEMY_ONE:
             self.metadata = sqlalchemy.MetaData(bind=engine)
+        else:
+            self.metadata = None
 
-        url = (
+        self.url = (
             repr(sqlalchemy.MetaData(bind=engine).bind.url)
             if IS_SQLALCHEMY_ONE
             else repr(engine.url)
         )
 
-        self.session = self._create_session(engine, url)
+        self.dialect = engine.url.get_dialect()
+        self.session = self._create_session(engine, self.url)
 
-        self.connections[alias or url] = self
-
+        self.connections[alias or self.url] = self
         self.connect_args = None
-        self.alias = alias
         Connection.current = self
 
     @classmethod
@@ -180,20 +240,32 @@ class Connection:
         to tell them how to pass the connection string
         """
         DEFAULT_PREFIX = "\n\n"
+        prefix = ""
 
         if connect_str:
             matches = get_close_matches(connect_str, list(cls.connections), n=1)
+            matches_db = get_close_matches(
+                connect_str.lower(), list(DB_DOCS_LINKS.keys()), cutoff=0.3, n=1
+            )
 
             if matches:
-                prefix = (
+                prefix = prefix + (
                     "\n\nPerhaps you meant to use the existing "
-                    f"connection: %sql {matches[0]!r}?\n\n"
+                    f"connection: %sql {matches[0]!r}?"
                 )
 
-            else:
+            if matches_db:
+                prefix = prefix + (
+                    f"\n\nPerhaps you meant to use the {matches_db[0]!r} db \n"
+                    f"To find more information regarding connection: "
+                    f"{DB_DOCS_LINKS[matches_db[0]]}\n\n"
+                )
+
+            if not matches and not matches_db:
                 prefix = DEFAULT_PREFIX
         else:
             matches = None
+            matches_db = None
             prefix = DEFAULT_PREFIX
 
         connection_string = (
@@ -314,8 +386,7 @@ class Connection:
         else:
             if cls.connections:
                 if displaycon:
-                    # display list of connections
-                    print(cls.connection_list())
+                    cls.display_current_connection()
             elif os.getenv("DATABASE_URL"):
                 cls.current = Connection.from_connect_str(
                     connect_str=os.getenv("DATABASE_URL"),
@@ -334,27 +405,53 @@ class Connection:
         return name
 
     @classmethod
-    def connection_list(cls):
-        """Returns the list of connections, appending '*' to the current one"""
-        result = []
+    def _get_connections(cls):
+        """
+        Return a list of dictionaries
+        """
+        connections = []
+
         for key in sorted(cls.connections):
             conn = cls.connections[key]
 
-            if cls.is_custom_connection(conn):
-                engine_url = conn.url
-            else:
-                engine_url = conn.metadata.bind.url if IS_SQLALCHEMY_ONE else conn.url
+            current = conn == cls.current
 
-            prefix = "* " if conn == cls.current else "  "
+            connections.append(
+                {
+                    "current": current,
+                    "key": key,
+                    "url": conn.url,
+                    "alias": conn.alias,
+                    "connection": conn,
+                }
+            )
 
-            if conn.alias:
-                repr_ = f"{prefix} ({conn.alias}) {engine_url!r}"
-            else:
-                repr_ = f"{prefix} {engine_url!r}"
+        return connections
 
-            result.append(repr_)
+    @classmethod
+    def display_current_connection(cls):
+        for conn in cls._get_connections():
+            if conn["current"]:
+                alias = conn.get("alias")
+                if alias:
+                    display.message(f"Running query in {alias!r}")
+                else:
+                    display.message(f"Running query in {conn['url']!r}")
 
-        return "\n".join(result)
+    @classmethod
+    def connections_table(cls):
+        """Returns the current connections as a table"""
+        connections = cls._get_connections()
+
+        def map_values(d):
+            d["current"] = "*" if d["current"] else ""
+            d["alias"] = d["alias"] if d["alias"] else ""
+            return d
+
+        return display.ConnectionsTable(
+            headers=["current", "url", "alias"],
+            rows_maps=[map_values(c) for c in connections],
+        )
 
     @classmethod
     def close(cls, descriptor):
@@ -378,6 +475,15 @@ class Connection:
             )
             conn.session.close()
 
+    @classmethod
+    def close_all(cls):
+        """Close all active connections"""
+        connections = Connection.connections.copy()
+        for key, conn in connections.items():
+            conn.close(key)
+
+        cls.connections = {}
+
     def is_custom_connection(conn=None) -> bool:
         """
         Checks if given connection is custom
@@ -393,14 +499,9 @@ class Connection:
         if isinstance(conn, (CustomConnection, CustomSession)):
             is_custom_connection_ = True
         else:
-            # TODO: Better check when user passes a custom
-            # connection
-            if (
-                isinstance(
-                    conn, (sqlalchemy.engine.base.Connection, Connection, str, bool)
-                )
-                or conn.__class__.__name__ == "DataFrame"
-            ):
+            if isinstance(
+                conn, (sqlalchemy.engine.base.Connection, Connection)
+            ) or not (is_pep249_compliant(conn)):
                 is_custom_connection_ = False
             else:
                 is_custom_connection_ = True

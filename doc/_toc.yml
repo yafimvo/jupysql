@@ -17,6 +17,7 @@ parts:
     - file: user-guide/interactive
     - file: user-guide/data-profiling
     - file: user-guide/ggplot
+    - file: user-guide/table_explorer
     - file: user-guide/FAQ
 
   - caption: Integrations
@@ -32,6 +33,9 @@ parts:
       - file: integrations/postgres-connect
       - file: integrations/compatibility
       - file: integrations/questdb
+      - file: integrations/oracle
+      - file: integrations/trinodb
+
 
   - caption: API Reference
     chapters:
@@ -41,6 +45,7 @@ parts:
     - file: api/configuration
     - file: api/python
     - file: api/magic-tables-columns
+    - file: api/magic-profile
 
   - caption: How-To
     chapters:
@@ -50,12 +55,15 @@ parts:
     - file: howto/syntax-highlighting
     - file: howto/csv
     - file: howto/autocompletion
+    - file: howto/format-sql
+    - file: howto/benchmarking-time
 
   - caption: Tutorials
     chapters:
     - file: tutorials/duckdb-github
     - file: tutorials/etl
     - file: tutorials/excel
+    - file: tutorials/product-analytics
 
   - caption: Community
     chapters:

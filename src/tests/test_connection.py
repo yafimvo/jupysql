@@ -3,11 +3,14 @@ from unittest.mock import ANY, Mock, patch
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ResourceClosedError
+
 import sql.connection
-from sql.connection import Connection
+from sql.connection import Connection, CustomConnection
 from IPython.core.error import UsageError
 import sqlglot
 import sqlalchemy
+import sqlite3
 
 
 @pytest.fixture
@@ -32,7 +35,10 @@ def mock_postgres(monkeypatch, cleanup):
 def test_password_isnt_displayed(mock_postgres):
     Connection.from_connect_str("postgresql://user:topsecret@somedomain.com/db")
 
-    assert "topsecret" not in Connection.connection_list()
+    table = Connection.connections_table()
+
+    assert "topsecret" not in str(table)
+    assert "topsecret" not in table._repr_html_()
 
 
 def test_connection_name(mock_postgres):
@@ -266,3 +272,108 @@ def test_no_current_connection_and_get_info(monkeypatch, mock_database):
 
     monkeypatch.setattr(conn, "session", None)
     assert conn._get_curr_sqlalchemy_connection_info() is None
+
+
+def test_get_connections():
+    Connection(engine=create_engine("sqlite://"))
+    Connection(engine=create_engine("duckdb://"))
+
+    assert Connection._get_connections() == [
+        {
+            "url": "duckdb://",
+            "current": True,
+            "alias": None,
+            "key": "duckdb://",
+            "connection": ANY,
+        },
+        {
+            "url": "sqlite://",
+            "current": False,
+            "alias": None,
+            "key": "sqlite://",
+            "connection": ANY,
+        },
+    ]
+
+
+def test_display_current_connection(capsys):
+    Connection(engine=create_engine("duckdb://"))
+    Connection.display_current_connection()
+
+    captured = capsys.readouterr()
+    assert captured.out == "Running query in 'duckdb://'\n"
+
+
+def test_connections_table():
+    Connection(engine=create_engine("sqlite://"))
+    Connection(engine=create_engine("duckdb://"))
+
+    connections = Connection.connections_table()
+    assert connections._headers == ["current", "url", "alias"]
+    assert connections._rows == [["*", "duckdb://", ""], ["", "sqlite://", ""]]
+
+
+def test_properties(mock_postgres):
+    conn = Connection.from_connect_str("postgresql://user:topsecret@somedomain.com/db")
+
+    assert "topsecret" not in conn.url
+    assert "***" in conn.url
+    assert conn.name == "user@db"
+    assert isinstance(conn.engine, Engine)
+    assert conn.dialect
+    assert conn.session
+
+
+class dummy_connection:
+    def __init__(self):
+        self.engine_name = "dummy_engine"
+
+    def close(self):
+        pass
+
+
+@pytest.mark.parametrize(
+    "conn, expected",
+    [
+        [sqlite3.connect(""), True],
+        [
+            CustomConnection(engine=sqlalchemy.create_engine("sqlite://")),
+            True,
+        ],
+        [
+            Connection(engine=sqlalchemy.create_engine("sqlite://")),
+            False,
+        ],
+        [dummy_connection(), False],
+        ["not_a_valid_connection", False],
+        [0, False],
+    ],
+    ids=[
+        "sqlite3_connection",
+        "custom_connection",
+        "normal_connection",
+        "dummy_connection",
+        "str",
+        "int",
+    ],
+)
+def test_custom_connection(conn, expected):
+    is_custom = Connection.is_custom_connection(conn)
+    assert is_custom == expected
+
+
+def test_close_all(ip_empty):
+    ip_empty.run_cell("%sql duckdb://")
+    ip_empty.run_cell("%sql sqlite://")
+
+    connections_copy = Connection.connections.copy()
+
+    Connection.close_all()
+
+    with pytest.raises(ResourceClosedError):
+        connections_copy["sqlite://"].execute("").fetchall()
+
+    with pytest.raises(ResourceClosedError):
+        connections_copy["duckdb://"].execute("").fetchall()
+
+    assert not Connection.connections

@@ -9,8 +9,12 @@ dependencies:
   - matplotlib
   - pandas
   - pip
+  # by default binder runs an old version of jupyterlab
+  # that doesn't work with jupysql-plugin
+  - jupyterlab<4
   - pip:
     - jupyter-book
+    - jupyterlab_myst # display admonitions in jupyterlab
     # duckdb example
     - duckdb
     - duckdb-engine
@@ -19,5 +23,7 @@ dependencies:
     - pyarrow
     # package
     - -e .
+    # to add sql syntax highlighting + formatting
+    - jupysql-plugin
     # required to open .md files as nbs
     - jupytext

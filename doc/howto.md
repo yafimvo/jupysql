@@ -382,10 +382,28 @@ LIMIT 3
 
 ## Ignore deprecation warnings
 
-We display warnings to let you know when the API will change so you have enough time to update your code, if you want to supress this warnings, add this at the top of your notebook:
+We display warnings to let you know when the API will change so you have enough time to update your code, if you want to suppress this warnings, add this at the top of your notebook:
 
 ```{code-cell} ipython3
 import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+```
+
+## Hide connection string
+
+If you want to hide the connection string, pass an alias
+
+```{code-cell} ipython3
+%sql --close duckdb://
+```
+
+```{code-cell} ipython3
+%sql duckdb:// --alias myconnection
+```
+
+The alias will be displayed instead of the connection string:
+
+```{code-cell} ipython3
+%sql SELECT * FROM 'penguins.csv' LIMIT 3
 ```
