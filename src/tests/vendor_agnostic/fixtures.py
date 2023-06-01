@@ -30,7 +30,7 @@ def get_database_config_helper():
 
 
 """
-Create the temporary folder to keep some static database storage files & destory later
+Create the temporary folder to keep some static database storage files & destroy later
 """
 
 
@@ -39,7 +39,7 @@ def run_around_tests(tmpdir_factory):
     # Create tmp folder
     my_tmpdir = tmpdir_factory.mktemp(_testing.DatabaseConfigHelper.get_tmp_dir())
     yield my_tmpdir
-    # Destory tmp folder
+    # Destroy tmp folder
     shutil.rmtree(str(my_tmpdir))
 
 
@@ -330,7 +330,7 @@ def custom_database_ready(
 
         time.sleep(poll_freq)
 
-    # print all the errors so we know what's goin on since failing to connect might be
+    # print all the errors so we know what's going on since failing to connect might be
     # to some misconfiguration error
     errors_ = "\n".join(errors)
     print(f"ERRORS: {errors_}")
@@ -366,7 +366,7 @@ def questdb_container(is_bypass_init=False):
 @pytest.fixture
 def ip_questdb(ip_empty):
     """
-    Initalizes questdb database container and loads it with data
+    Initializes questdb database container and loads it with data
     """
     with questdb_container():
         ip_empty.run_cell(
