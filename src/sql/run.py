@@ -392,12 +392,18 @@ class ResultSet(ColumnGuesserMixin):
         """
         sqlaproxy = self.sqlaproxy
         config = self.config
-        _should_fetch_all_by_config = (
-            config.displaylimit == 0 or not config.displaylimit
+        _should_try_lazy_fetch = hasattr(sqlaproxy, "_soft_closed")
+
+        _should_fetch_all = (
+            (config.displaylimit == 0 or not config.displaylimit)
+            or fetch_all
+            or not _should_try_lazy_fetch
         )
 
         is_autolimit = isinstance(config.autolimit, int) and config.autolimit > 0
-        is_connection_closed = sqlaproxy._soft_closed
+        is_connection_closed = (
+            sqlaproxy._soft_closed if _should_try_lazy_fetch else False
+        )
 
         should_return_results = is_connection_closed or (
             len(self._results) > 0 and is_autolimit
@@ -412,18 +418,19 @@ class ResultSet(ColumnGuesserMixin):
             if is_autolimit:
                 results = sqlaproxy.fetchmany(size=config.autolimit)
             else:
-                if fetch_all or _should_fetch_all_by_config:
+                if _should_fetch_all:
                     all_results = sqlaproxy.fetchall()
                     results = self._results + all_results
                     self._results = results
                 else:
                     results = sqlaproxy.fetchmany(size=config.displaylimit)
 
-                # Try to fetch an extra row to find out
-                # if there are more results to fetch
-                row = sqlaproxy.fetchone()
-                if row is not None:
-                    results += [row]
+                if _should_try_lazy_fetch:
+                    # Try to fetch an extra row to find out
+                    # if there are more results to fetch
+                    row = sqlaproxy.fetchone()
+                    if row is not None:
+                        results += [row]
 
         # Check if we have more rows to show
         if config.displaylimit > 0:
@@ -624,8 +631,9 @@ def run(conn, sql, config):
         return df
     else:
         resultset = ResultSet(result, config)
+
         # lazy load
-        resultset.fetch_results(fetch_all=True)
+        resultset.fetch_results()
         return select_df_type(resultset, config)
 
 
