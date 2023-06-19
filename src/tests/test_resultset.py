@@ -11,6 +11,8 @@ import sqlalchemy
 from sql.run import ResultSet
 from sql import run as run_module
 
+import re
+
 
 @pytest.fixture
 def config():
@@ -98,3 +100,160 @@ def test_none_pretty(config):
     result_set = ResultSet(result, config)
     assert result_set.pretty is None
     assert "" == str(result_set)
+
+
+def test_lazy_loading(result, config):
+    resultset = ResultSet(result, config)
+    assert len(resultset._results) == 0
+    resultset.fetch_results()
+    assert len(resultset._results) == 3
+
+
+@pytest.mark.parametrize(
+    "autolimit, expected",
+    [
+        (None, 3),
+        (False, 3),
+        (0, 3),
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 3),
+    ],
+)
+def test_lazy_loading_autolimit(result, config, autolimit, expected):
+    config.autolimit = autolimit
+    resultset = ResultSet(result, config)
+    assert len(resultset._results) == 0
+    resultset.fetch_results()
+    assert len(resultset._results) == expected
+
+
+@pytest.mark.parametrize(
+    "displaylimit, expected",
+    [
+        (0, 3),
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 3),
+    ],
+)
+def test_lazy_loading_displaylimit(result, config, displaylimit, expected):
+    config.displaylimit = displaylimit
+    result_set = ResultSet(result, config)
+
+    assert len(result_set._results) == 0
+    result_set.fetch_results()
+    html = result_set._repr_html_()
+    row_count = _get_number_of_rows_in_html_table(html)
+    assert row_count == expected
+
+
+@pytest.mark.parametrize(
+    "displaylimit, expected_display",
+    [
+        (0, 3),
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 3),
+    ],
+)
+def test_lazy_loading_displaylimit_fetch_all(
+    result, config, displaylimit, expected_display
+):
+    max_results_count = 3
+    config.autolimit = False
+    config.displaylimit = displaylimit
+    result_set = ResultSet(result, config)
+
+    # Initialize result_set without fetching results
+    assert len(result_set._results) == 0
+
+    # Fetch the min number of rows (based on configuration)
+    result_set.fetch_results()
+
+    html = result_set._repr_html_()
+    row_count = _get_number_of_rows_in_html_table(html)
+    expected_results = (
+        max_results_count
+        if expected_display + 1 >= max_results_count
+        else expected_display + 1
+    )
+
+    assert len(result_set._results) == expected_results
+    assert row_count == expected_display
+
+    # Fetch the the rest results, but don't display them in the table
+    result_set.fetch_results(fetch_all=True)
+
+    html = result_set._repr_html_()
+    row_count = _get_number_of_rows_in_html_table(html)
+
+    assert len(result_set._results) == max_results_count
+    assert row_count == expected_display
+
+
+@pytest.mark.parametrize(
+    "displaylimit, expected_display",
+    [
+        (0, 3),
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 3),
+    ],
+)
+def test_lazy_loading_list(result, config, displaylimit, expected_display):
+    max_results_count = 3
+    config.autolimit = False
+    config.displaylimit = displaylimit
+    result_set = ResultSet(result, config)
+
+    # Initialize result_set without fetching results
+    assert len(result_set._results) == 0
+
+    # Fetch the min number of rows (based on configuration)
+    result_set.fetch_results()
+
+    expected_results = (
+        max_results_count
+        if expected_display + 1 >= max_results_count
+        else expected_display + 1
+    )
+
+    assert len(result_set._results) == expected_results
+    assert len(list(result_set)) == max_results_count
+
+
+@pytest.mark.parametrize(
+    "autolimit, expected_results",
+    [
+        (0, 3),
+        (1, 1),
+        (2, 2),
+        (3, 3),
+        (4, 3),
+    ],
+)
+def test_lazy_loading_autolimit_list(result, config, autolimit, expected_results):
+    config.autolimit = autolimit
+    result_set = ResultSet(result, config)
+    assert len(result_set._results) == 0
+
+    result_set.fetch_results()
+
+    assert len(result_set._results) == expected_results
+    assert len(list(result_set)) == expected_results
+
+
+def _get_number_of_rows_in_html_table(html):
+    """
+    Returns the number of <tr> tags within the <tbody> section
+    """
+    pattern = r"<tbody>(.*?)<\/tbody>"
+    tbody_content = re.findall(pattern, html, re.DOTALL)[0]
+    row_count = len(re.findall(r"<tr>", tbody_content))
+
+    return row_count

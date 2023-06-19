@@ -613,7 +613,7 @@ def test_displaylimit_with_conditional_clause(
         out = runsql(ip, query_clause)
 
     if expected_truncated_length:
-        assert f"Truncated to displaylimit of 10" in out._repr_html_()
+        assert "Truncated to displaylimit of 10" in out._repr_html_()
 
 
 def test_column_local_vars(ip):
