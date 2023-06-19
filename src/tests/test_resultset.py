@@ -33,7 +33,7 @@ def result():
 
 @pytest.fixture
 def result_set(result, config):
-    return ResultSet(result, config)
+    return ResultSet(result, config).fetch_results()
 
 
 def test_resultset_getitem(result_set):
@@ -81,15 +81,15 @@ def test_resultset_repr_html(result_set):
 
 def test_resultset_config_autolimit_dict(result, config):
     config.autolimit = 1
-
-    assert ResultSet(result, config).dict() == {"x": (0,)}
+    resultset = ResultSet(result, config).fetch_results()
+    assert resultset.dict() == {"x": (0,)}
 
 
 def test_resultset_with_non_sqlalchemy_results(config):
     df = pd.DataFrame({"x": range(3)})  # noqa
     conn = Connection(engine=create_engine("duckdb://"))
     result = conn.execute("SELECT * FROM df")
-    assert ResultSet(result, config) == [(0,), (1,), (2,)]
+    assert ResultSet(result, config).fetch_results() == [(0,), (1,), (2,)]
 
 
 def test_none_pretty(config):
