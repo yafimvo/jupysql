@@ -383,7 +383,7 @@ class ResultSet(ColumnGuesserMixin):
 
     def _fetch_query_results(self, fetch_all=False):
         """
-        Retruns rows of a query result as a list of tuples.
+        Returns rows of a query result as a list of tuples.
 
         Parameters
         ----------
@@ -464,7 +464,7 @@ class FakeResultProxy(object):
         def fetchmany(size):
             pos = 0
             while pos < len(source_list):
-                yield source_list[pos : pos + size]
+                yield source_list[pos: pos + size]
                 pos += size
 
         self.fetchmany = fetchmany
