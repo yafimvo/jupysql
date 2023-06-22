@@ -76,7 +76,7 @@ def mock_resultset():
 
         @classmethod
         def fetch_results(self, fetch_all=False):
-            ...
+            pass
 
     return ResultSet
 
