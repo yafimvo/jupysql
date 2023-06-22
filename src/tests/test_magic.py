@@ -120,34 +120,66 @@ def test_result_var_multiline_shovel(ip):
     assert "Shakespeare" in str(result) and "Brecht" in str(result)
 
 
-def test_return_result_var(ip, capsys):
-    # Assert that no result is returned when using regular result var syntax <<
-    result = ip.run_cell_magic(
-        "sql",
-        "",
-        """
-        sqlite://
-        x <<
-        SELECT last_name FROM author;
-        """,
-    )
+@pytest.mark.parametrize(
+    "sql_statement, expected_result",
+    [
+        (
+            """
+            sqlite://
+            x <<
+            SELECT last_name FROM author;
+            """,
+            None,
+        ),
+        (
+            """
+            sqlite://
+            x= <<
+            SELECT last_name FROM author;
+            """,
+            {"last_name": ("Shakespeare", "Brecht")},
+        ),
+        (
+            """
+            sqlite://
+            x = <<
+            SELECT last_name FROM author;
+            """,
+            {"last_name": ("Shakespeare", "Brecht")},
+        ),
+        (
+            """
+            sqlite://
+            x = <<
+            SELECT last_name FROM author;
+            """,
+            {"last_name": ("Shakespeare", "Brecht")},
+        ),
+        (
+            """
+            sqlite://
+            x =     <<
+            SELECT last_name FROM author;
+            """,
+            {"last_name": ("Shakespeare", "Brecht")},
+        ),
+        (
+            """
+            sqlite://
+            x      =     <<
+            SELECT last_name FROM author;
+            """,
+            {"last_name": ("Shakespeare", "Brecht")},
+        ),
+    ],
+)
+def test_return_result_var(ip, sql_statement, expected_result):
+    result = ip.run_cell_magic("sql", "", sql_statement)
     var = ip.user_global_ns["x"]
     assert "Shakespeare" in str(var) and "Brecht" in str(var)
-    assert result is None
-
-    # Assert that correct result is returned when using return result var syntax = <<
-    result = ip.run_cell_magic(
-        "sql",
-        "",
-        """
-        sqlite://
-        x= <<
-        SELECT last_name FROM author;
-        """,
-    )
-    var = ip.user_global_ns["x"]
-    assert "Shakespeare" in str(var) and "Brecht" in str(var)
-    assert result.dict() == {"last_name": ("Shakespeare", "Brecht")}
+    if result is not None:
+        result = result.dict()
+    assert result == expected_result
 
 
 def test_access_results_by_keys(ip):
@@ -1084,7 +1116,7 @@ invalid_connection_string_duckdb = f"""
 An error happened while creating the connection: connect(): incompatible function arguments. The following argument types are supported:
     1. (database: str = ':memory:', read_only: bool = False, config: dict = None) -> duckdb.DuckDBPyConnection
 
-Invoked with: kwargs: host='invalid_db'.
+Invoked with: kwargs: host='invalid_db', config={{}}.
 
 Perhaps you meant to use the 'duckdb' db 
 To find more information regarding connection: https://jupysql.ploomber.io/en/latest/integrations/duckdb.html
@@ -1101,7 +1133,6 @@ Pass a valid connection string:
 
 def test_error_on_invalid_connection_string_duckdb(ip_empty, clean_conns):
     result = ip_empty.run_cell("%sql duckdb://invalid_db")
-
     assert invalid_connection_string_duckdb.strip() == str(result.error_in_exec)
     assert isinstance(result.error_in_exec, UsageError)
 

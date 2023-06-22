@@ -1,6 +1,11 @@
 # CHANGELOG
 
 ## 0.7.10dev
+* [Feature] Support flexible spacing `myvar=<<` operator ([#525](https://github.com/ploomber/jupysql/issues/525))
+
+* [Doc] Modified integrations content to ensure they're all consistent (#523)
+* [Doc] Document --persist-replace in API section (#539)
+* [Fix] Fixed CI issue by updating `invalid_connection_string_duckdb` in `test_magic.py` (#631)
 
 * [Fix] Refactored `ResultSet` to lazy loading (#470)
 
@@ -18,6 +23,8 @@
 * [Doc] Added more details to the SQL parametrization user guide. ([#288](https://github.com/ploomber/jupysql/issues/288))
 * [Doc] Snowflake integration guide ([#384](https://github.com/ploomber/jupysql/issues/384))
 * [Doc] User guide on using JupySQL in `.py` scripts ([#449](https://github.com/ploomber/jupysql/issues/449))
+* [Doc] Added `%magic?` to APIs and quickstart ([#97](https://github.com/ploomber/jupysql/issues/97))
+
 
 ## 0.7.8 (2023-06-01)
 

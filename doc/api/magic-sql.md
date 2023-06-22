@@ -19,6 +19,10 @@ myst:
 
 # `%sql`/`%%sql`
 
+```{note}
+You can view the documentation and command line arguments by running `%sql?`
+```
+
 ``-l`` / ``--connections``
     List all active connections ([example](#list-connections))
 
@@ -36,6 +40,9 @@ myst:
 
 ``--append``
     Like ``--persist``, but appends to the table if it already exists ([example](#append-to-table))
+
+``--persist-replace``
+    Like ``--persist``, but it will drop the existing table before inserting the new table ([example](#persist-replace-to-table))
 
 ``-a`` / ``--connection_arguments <"{connection arguments}">``
     Specify dictionary of connection arguments to pass to SQL driver
@@ -199,6 +206,20 @@ my_data = pd.DataFrame({"x": range(3, 6), "y": range(3, 6)})
 
 ```{code-cell} ipython3
 %sql --append my_data
+```
+
+```{code-cell} ipython3
+%sql SELECT * FROM my_data
+```
+
+## Persist replace to table
+
+```{code-cell} ipython3
+my_data = pd.DataFrame({"x": range(3), "y": range(3)})
+```
+
+```{code-cell} ipython3
+%sql --persist-replace my_data --no-index
 ```
 
 ```{code-cell} ipython3
