@@ -638,6 +638,11 @@ class Connection:
             query = str(store.render(query, with_=with_))
 
         if self.is_custom_connection():
+            conn = self.session.engine
+            _is_duckdb_native = _check_if_duckdb_dbapi_connection(conn)
+            if not _is_duckdb_native:
+                query = self._transpile_query(query)
+
             query = str(query)
         else:
             query = self._transpile_query(query)
@@ -654,6 +659,11 @@ class Connection:
 
 
 atexit.register(Connection.close_all, verbose=True)
+
+
+def _check_if_duckdb_dbapi_connection(conn):
+    """Check if the connection is a native duckdb connection"""
+    return hasattr(conn, "df") and hasattr(conn, "pl")
 
 
 class CustomSession(sqlalchemy.engine.base.Connection):
