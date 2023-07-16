@@ -24,7 +24,6 @@ except ModuleNotFoundError:
 import sql.connection
 from sql.telemetry import telemetry
 import warnings
-from sql import util
 
 
 def _summary_stats(conn, table, column, with_=None):
