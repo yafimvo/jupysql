@@ -141,9 +141,6 @@ def _boxplot_stats(conn, table, column, whis=1.5, autorange=False, with_=None):
     if not conn:
         conn = sql.connection.Connection.current
 
-    # calculating stats might fail on other DBs (percentile_disc)
-    util.support_only_sql_alchemy_connection("boxplot")
-
     def _compute_conf_interval(N, med, iqr):
         notch_min = med - 1.57 * iqr / np.sqrt(N)
         notch_max = med + 1.57 * iqr / np.sqrt(N)

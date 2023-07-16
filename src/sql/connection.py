@@ -637,11 +637,10 @@ class Connection:
         if with_:
             query = str(store.render(query, with_=with_))
 
-        query = self._transpile_query(query)
-
         if self.is_custom_connection():
             query = str(query)
         else:
+            query = self._transpile_query(query)
             query = sqlalchemy.sql.text(query)
 
         return query

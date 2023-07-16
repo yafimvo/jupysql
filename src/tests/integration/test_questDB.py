@@ -533,7 +533,7 @@ def test_sqlcmd_not_supported_error(ip_questdb, query, capsys):
     assert isinstance(out.error_in_exec, UsageError)
     assert str(expected_error_message).lower() in error_message.lower()
 
-
+@pytest.mark.skipif(reason="removed the error message so it raises native questdb error")
 @_cleanup_cm()
 @pytest.mark.parametrize(
     "func, expected_error_message",
@@ -560,7 +560,7 @@ def test_ggplot_boxplot_not_supported_error(
     assert err.value.error_type == "RuntimeError"
     assert expected_error_message in str(err)
 
-
+@pytest.mark.skipif(reason="removed the error message so it raises native questdb error")
 @_cleanup_cm()
 @pytest.mark.parametrize(
     "query, expected_error_message",
