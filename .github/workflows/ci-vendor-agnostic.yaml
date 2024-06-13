@@ -1,0 +1,80 @@
+name: CI - Vendor Agnostic - Local
+
+on:
+  push:
+    branches:
+      - master
+      - 'dev/**'
+  pull_request:
+
+
+jobs:
+  vendor-agnostic-sqlalchemy-v1:
+    strategy:
+      matrix:
+        python-version: ['3.11']
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          # Install MSSQL ODBC 18
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          sudo curl -o /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list 
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
+          echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+          source ~/.bashrc
+
+          pip install ".[integration]"
+          pip install "sqlalchemy==1.4.48"
+      - name: Integration Test
+        env:
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+          SF_DATABASE: ${{ secrets.SF_DATABASE }}      
+        run:
+          pytest src/tests/vendor_agnostic/test_vendor_agnostic.py --verbose
+
+  vendor-agnostic-sqlalchemy-v2:
+    strategy:
+      matrix:
+        python-version: ['3.11']
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          # Install MSSQL ODBC 18
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          sudo curl -o /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list 
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
+          echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+          source ~/.bashrc
+
+          pip install ".[integration]"
+          pip install "sqlalchemy>2"
+      - name: Integration Test
+        env:
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          SF_PASSWORD: ${{ secrets.SF_PASSWORD }}
+          SF_DATABASE: ${{ secrets.SF_DATABASE }}      
+        run:
+          pytest src/tests/vendor_agnostic/test_vendor_agnostic.py --verbose
